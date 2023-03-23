@@ -1,0 +1,52 @@
+name: 'Azure Deployment Environments'
+description: 'Create Azure Deployment Environments on demand for branches and pull releases.'
+author: 'ColbyLWilliams'
+inputs:
+  tenant:
+    required: false
+    description: 'The Azure tenant ID (GUID).'
+  subscription:
+    description: 'The Azure subscription (GUID).'
+  devcenter:
+    required: true
+    description: 'The DevCenter name.'
+  project:
+    required: true
+    description: 'The Project name.'
+  catalog:
+    required: false
+    description: 'The name of the Catalog.'
+  catalog-item:
+    required: false
+    description: 'The name of the Catalog Item.'
+  environment-name:
+    required: true
+    description: 'The name of the environment. This is likely an output from the deployment-environments-setup action.'
+  environment-type:
+    required: true
+    description: 'The name of the environment type. This is likely an output from the deployment-environments-setup action.'
+  create:
+    required: false
+    description: 'Create deployment environment if it does not exist'
+    default: 'false'
+  parameters:
+    required: false
+    description: ''
+outputs:
+  tenant:
+    description: ''
+  subscription:
+    description: 'The environment subscription (GUID).'
+  resource-group:
+    description: 'The name of the environment resource group.'
+  resource-group-id:
+    description: 'The resource id of the environment resource group.'
+  exists:
+    description: 'True if the environment exists otherwise False.'
+  created:
+    description: 'True if the environment was created by the action otherwise False.'
+  portal-url:
+    description: 'Url to the environment resource group in the azure portal.'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
