@@ -81,7 +81,15 @@ function run() {
             core.setOutput('tenant', tenant);
             core.info('Installing Azure CLI DevCenter extension');
             yield exec.exec(az, devcenterExtCmd);
-            const baseArgs = ['--only-show-errors', '--dev-center', devcenter, '--project', project, '--name', environmentName];
+            const baseArgs = [
+                '--only-show-errors',
+                '--dev-center',
+                devcenter,
+                '--project',
+                project,
+                '--name',
+                environmentName
+            ];
             const showCmd = [...cmdBase, 'show', ...baseArgs];
             let exists = false;
             let created = false;
