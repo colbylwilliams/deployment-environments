@@ -8,3 +8,7 @@ singleQuote: true
 trailingComma: none
 bracketSpacing: true
 arrowParens: avoid
+overrides:
+  - files: .github/**/*.yml
+    options:
+      tabWidth: 2
