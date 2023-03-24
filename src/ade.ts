@@ -36,19 +36,21 @@ export async function run(): Promise<void> {
 
         const config = await getConfiguration(az);
 
-        core.info(`Setting output name: ${config.environmentName}`);
-        core.setOutput('name', config.environmentName);
+        if (config.action === SETUP) {
+            core.info('Setting outputs');
+            core.info(`name: ${config.environmentName}`);
+            core.setOutput('name', config.environmentName);
+            core.info(`type: ${config.environmentType}`);
+            core.setOutput('type', config.environmentType);
 
-        core.info(`Setting output name: ${config.environmentName}`);
-        core.setOutput('type', config.environmentType);
+            core.info('Setting environment variables');
+            core.info(`ADE_NAME: ${config.environmentName}`);
+            core.exportVariable('ADE_NAME', config.environmentName);
+            core.info(`ADE_TYPE: ${config.environmentType}`);
+            core.exportVariable('ADE_TYPE', config.environmentType);
 
-        core.info(`Setting environment variable ADE_NAME: ${config.environmentName}`);
-        core.exportVariable('ADE_NAME', config.environmentName);
-
-        core.info(`Setting environment variable ADE_TYPE: ${config.environmentType}`);
-        core.exportVariable('ADE_TYPE', config.environmentType);
-
-        if (config.action === SETUP) return;
+            return;
+        }
 
         core.info('Installing Azure CLI DevCenter extension');
         await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
@@ -126,7 +128,7 @@ export async function run(): Promise<void> {
             core.info(`No existing environment found: code: ${show.exitCode}`);
         }
 
-        getSetOutputs(config, environment, exists, created);
+        setOutputsAndVariables(config, environment, exists, created);
     } catch (error) {
         if (error instanceof Error) core.setFailed(error.message);
     }
@@ -347,13 +349,21 @@ function getAutoAction(): string {
     throw new Error(`Unsupported event type: ${eventName}`);
 }
 
-function getSetOutputs(
+function setOutputsAndVariables(
     config: Configuration,
     environment: Environment | undefined,
     exists: boolean,
     created: boolean
 ): void {
-    core.info(`Setting output tenant: ${config.tenant}`);
+    core.info('Setting outputs:');
+
+    core.info(`  name: ${config.environmentName}`);
+    core.setOutput('name', config.environmentName);
+
+    core.info(`  type: ${config.environmentType}`);
+    core.setOutput('type', config.environmentType);
+
+    core.info(`  tenant: ${config.tenant}`);
     core.setOutput('tenant', config.tenant);
 
     let groupId = '';
@@ -370,45 +380,53 @@ function getSetOutputs(
         subscription = groupId.split('/subscriptions/')[1].split('/')[0];
         portalUrl = `https://portal.azure.com/#@${config.tenant}/resource${groupId}`;
 
-        core.info(`Setting output subscription: ${subscription}`);
+        core.info(`  subscription: ${subscription}`);
         core.setOutput('subscription', subscription);
 
-        core.info(`Setting output resource-group: ${group}`);
+        core.info(`  resource-group: ${group}`);
         core.setOutput('resource-group', group);
 
-        core.info(`Setting output resource-group-id: ${groupId}`);
+        core.info(`  resource-group-id: ${groupId}`);
         core.setOutput('resource-group-id', groupId);
 
-        core.info(`Setting output portal-url: ${portalUrl}`);
+        core.info(`  portal-url: ${portalUrl}`);
         core.setOutput('portal-url', portalUrl);
     }
 
-    core.info(`Setting output exists: ${exists}`);
+    core.info(`  exists: ${exists}`);
     core.setOutput('exists', exists);
 
-    core.info(`Setting output created: ${created}`);
+    core.info(`  created: ${created}`);
     core.setOutput('created', created);
 
-    core.info(`Setting environment variable ADE_TENANT: ${config.tenant}`);
+    core.info('Setting environment variables:');
+
+    core.info(`  ADE_NAME: ${config.environmentName}`);
+    core.exportVariable('ADE_NAME', config.environmentName);
+
+    core.info(`  ADE_TYPE: ${config.environmentType}`);
+    core.exportVariable('ADE_TYPE', config.environmentType);
+
+    core.info(`  ADE_TENANT: ${config.tenant}`);
     core.exportVariable('ADE_TENANT', config.tenant);
 
     if (environment) {
-        core.info(`Setting environment variable ADE_SUBSCRIPTION: ${subscription}`);
+        core.info(`  ADE_SUBSCRIPTION: ${subscription}`);
         core.exportVariable('ADE_SUBSCRIPTION', subscription);
 
-        core.info(`Setting environment variable ADE_RESOURCE_GROUP: ${group}`);
+        core.info(`  ADE_RESOURCE_GROUP: ${group}`);
         core.exportVariable('ADE_RESOURCE_GROUP', group);
 
-        core.info(`Setting environment variable ADE_RESOURCE_GROUP_ID: ${groupId}`);
+        core.info(`  ADE_RESOURCE_GROUP_ID: ${groupId}`);
         core.exportVariable('ADE_RESOURCE_GROUP_ID', groupId);
 
-        core.info(`Setting environment variable ADE_PORTAL_URL: ${portalUrl}`);
+        core.info(`  ADE_PORTAL_URL: ${portalUrl}`);
         core.exportVariable('ADE_PORTAL_URL', portalUrl);
     }
 
-    core.info(`Setting environment variable ADE_EXISTS: ${exists}`);
+    core.info(`  ADE_EXISTS: ${exists}`);
     core.exportVariable('ADE_EXISTS', exists.toString());
 
-    core.info(`Setting environment variable ADE_CREATED: ${created}`);
+    core.info(`  ADE_CREATED: ${created}`);
     core.exportVariable('ADE_CREATED', created.toString());
 }
