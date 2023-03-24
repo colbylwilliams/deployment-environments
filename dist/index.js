@@ -62,21 +62,38 @@ function run() {
             core.setOutput('tenant', config.tenant);
             core.info('Installing Azure CLI DevCenter extension');
             yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+            const envArgs = [
+                '--only-show-errors',
+                '--dev-center',
+                config.devcenter,
+                '--project',
+                config.project,
+                '--name',
+                config.environmentName
+            ];
+            const mutateArgs = [
+                '--environment-type',
+                config.environmentType,
+                '--catalog-name',
+                config.catalog,
+                '--catalog-item-name',
+                config.catalogItem
+            ];
             let exists = false;
             let created = false;
             let environment;
-            const envArgs = ['--only-show-errors', '--dev-center', config.devcenter, '--project', config.project, '--name', config.environmentName];
-            const mutateArgs = ['--environment-type', config.environmentType, '--catalog-name', config.catalog, '--catalog-item-name', config.catalogItem];
             if (config.parameters)
                 mutateArgs.push('--parameters', config.parameters);
-            // TODO: Add support for parameters
             const show = yield exec.getExecOutput(az, [...envCmd, 'show', ...envArgs], { ignoreReturnCode: true });
             exists = show.exitCode === 0;
             if (exists) {
                 core.info('Found existing environment');
                 environment = JSON.parse(show.stdout);
                 if (config.action === 'update') {
-                    const update = yield exec.getExecOutput(az, [...envCmd, 'update', ...envArgs, ...mutateArgs], { ignoreReturnCode: true });
+                    core.info('Action is update, attempting to update environment');
+                    const update = yield exec.getExecOutput(az, [...envCmd, 'update', ...envArgs, ...mutateArgs], {
+                        ignoreReturnCode: true
+                    });
                     if (update.exitCode === 0) {
                         core.info('Updated environment');
                         environment = JSON.parse(update.stdout);
@@ -86,6 +103,7 @@ function run() {
                     }
                 }
                 else if (config.action === 'delete') {
+                    core.info('Action is delete, attempting to delete environment');
                     const del = yield exec.getExecOutput(az, [...envCmd, 'delete', ...envArgs], { ignoreReturnCode: true });
                     if (del.exitCode === 0) {
                         core.info('Deleted environment');
@@ -98,8 +116,7 @@ function run() {
             }
             else if (config.action === 'create' || config.action === 'ensure') {
                 core.info(`Action is ${config.action}, attempting to create environment`);
-                const createArgs = getCreateArgs();
-                const create = yield exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...createArgs], {
+                const create = yield exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...mutateArgs], {
                     ignoreReturnCode: true
                 });
                 exists = created = create.exitCode === 0;
@@ -145,20 +162,31 @@ function getConfiguration(az) {
             throw Error(`Invalid action: ${config.action}. Must be one of: ${actions.join(', ')}`);
         const file = yield getConfigurationFile();
         config.prefix = core.getInput('prefix', { required: false }) || (file === null || file === void 0 ? void 0 : file.prefix) || 'ci';
-        config.suffix = core.getInput('suffix', { required: false }) || (file === null || file === void 0 ? void 0 : file.suffix) || process.env['GITHUB_REPOSITORY_ID'];
-        config.mainBranch = core.getInput('main-branch', { required: false }) || (file === null || file === void 0 ? void 0 : file['main-branch']) || 'main';
+        config.suffix =
+            core.getInput('suffix', { required: false }) || (file === null || file === void 0 ? void 0 : file.suffix) || process.env['GITHUB_REPOSITORY_ID'];
         config.devBranch = core.getInput('dev-branch', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-branch']) || '';
-        config.prodEnvironmentName = core.getInput('prod-environment-name', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-name']) || '';
-        config.prodEnvironmentType = core.getInput('prod-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-type']) || 'Prod';
-        config.stagingEnvironmentType = core.getInput('staging-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['staging-environment-type']) || 'Staging';
-        config.testEnvironmentType = core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || 'Test';
-        config.devEnvironmentType = core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || 'Dev';
+        config.mainBranch = core.getInput('main-branch', { required: false }) || (file === null || file === void 0 ? void 0 : file['main-branch']) || 'main';
+        config.prodEnvironmentName =
+            core.getInput('prod-environment-name', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-name']) || '';
+        config.prodEnvironmentType =
+            core.getInput('prod-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-type']) || 'Prod';
+        config.stagingEnvironmentType =
+            core.getInput('staging-environment-type', { required: false }) ||
+                (file === null || file === void 0 ? void 0 : file['staging-environment-type']) ||
+                'Staging';
+        config.testEnvironmentType =
+            core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || 'Test';
+        config.devEnvironmentType =
+            core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || 'Dev';
         const setup = getEnvironmentConfig(config);
         config.environmentName = setup.name;
         config.environmentType = setup.type;
         if (config.action !== 'setup') {
             config.tenant = core.getInput('tenant', { required: false }) || (file === null || file === void 0 ? void 0 : file.tenant) || (yield getTenant(az, config));
-            config.subscription = core.getInput('subscription', { required: false }) || (file === null || file === void 0 ? void 0 : file.subscription) || (yield getSubscription(az, config));
+            config.subscription =
+                core.getInput('subscription', { required: false }) ||
+                    (file === null || file === void 0 ? void 0 : file.subscription) ||
+                    (yield getSubscription(az, config));
             config.devcenter = core.getInput('devcenter', { required: false }) || (file === null || file === void 0 ? void 0 : file.devcenter) || '';
             if (!config.devcenter)
                 throw Error('Must provide a value for devcenter as action input or in config file.');
@@ -216,7 +244,10 @@ function getEnvironmentConfig(config) {
         throw new Error(`Failed to get branch name or pr number from context`);
     const setup = {};
     if (isPr) {
-        setup.type = context.payload.pull_request['base']['ref'] == config.mainBranch && config.devBranch ? config.stagingEnvironmentType : config.testEnvironmentType;
+        setup.type =
+            context.payload.pull_request['base']['ref'] == config.mainBranch && config.devBranch
+                ? config.stagingEnvironmentType
+                : config.testEnvironmentType;
     }
     else {
         setup.type = refName == config.mainBranch ? config.prodEnvironmentType : config.devEnvironmentType;
@@ -231,25 +262,6 @@ function getEnvironmentConfig(config) {
     }
     core.info(`Resolved environment name: ${setup.name}`);
     return setup;
-}
-function getCreateArgs() {
-    const envType = core.getInput('environment-type', { required: true });
-    if (!envType)
-        throw new Error('Input environment-type is required to create environment');
-    core.info(`Found input environment-type: ${envType}`);
-    const catalog = core.getInput('catalog', { required: true });
-    if (!catalog)
-        throw new Error('Input catalog is required to create environment');
-    core.info(`Found input catalog: ${catalog}`);
-    const catalogItem = core.getInput('catalog-item', { required: true });
-    if (!catalogItem)
-        throw new Error('Input catalog-item is required to create environment');
-    core.info(`Found input catalog-item: ${catalogItem}`);
-    // const parameters: string = core.getInput('parameters', { required: false });
-    // if (parameters) core.info(`Found input parameters: ${parameters}`);
-    const createArgs = ['--environment-type', envType, '--catalog-name', catalog, '--catalog-item-name', catalogItem];
-    return createArgs;
-    // const envCreateCmd = [...envCmd, 'create', ...envArgs, ...createArgs, '--parameters', parameters];
 }
 function getTenant(az, config) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -291,7 +303,6 @@ function getSubscription(az, config) {
         subscription = subscriptionId.stdout.trim();
         core.info(`Found subscription: ${subscription}`);
         return subscription.replace('/', '').replace('subscriptions', '');
-        ;
     });
 }
 

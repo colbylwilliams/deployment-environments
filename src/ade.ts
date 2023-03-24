@@ -171,18 +171,14 @@ async function getConfiguration(az: string): Promise<Configuration> {
             (await getSubscription(az, config));
 
         config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || '';
-        if (!config.devcenter)
-            throw Error('Must provide a value for devcenter as action input or in config file.');
+        if (!config.devcenter) throw Error('Must provide a value for devcenter as action input or in config file.');
 
         config.project = core.getInput('project', { required: false }) || file?.project || '';
-        if (!config.project)
-            throw Error('Must provide a value for project as action input or in config file.');
+        if (!config.project) throw Error('Must provide a value for project as action input or in config file.');
 
         if (config.action === 'create' || config.action === 'update' || config.action === 'ensure') {
-
             config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || '';
-            if (!config.catalog)
-                throw Error('Must provide a value for catalog as action input or in config file.');
+            if (!config.catalog) throw Error('Must provide a value for catalog as action input or in config file.');
 
             config.catalogItem = core.getInput('catalog-item', { required: false }) || file?.['catalog-item'] || '';
             if (!config.catalogItem)
@@ -264,28 +260,6 @@ function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
     core.info(`Resolved environment name: ${setup.name}`);
 
     return setup;
-}
-
-function getCreateArgs(): string[] {
-    const envType: string = core.getInput('environment-type', { required: true });
-    if (!envType) throw new Error('Input environment-type is required to create environment');
-    core.info(`Found input environment-type: ${envType}`);
-
-    const catalog: string = core.getInput('catalog', { required: true });
-    if (!catalog) throw new Error('Input catalog is required to create environment');
-    core.info(`Found input catalog: ${catalog}`);
-
-    const catalogItem: string = core.getInput('catalog-item', { required: true });
-    if (!catalogItem) throw new Error('Input catalog-item is required to create environment');
-    core.info(`Found input catalog-item: ${catalogItem}`);
-
-    // const parameters: string = core.getInput('parameters', { required: false });
-    // if (parameters) core.info(`Found input parameters: ${parameters}`);
-
-    const createArgs = ['--environment-type', envType, '--catalog-name', catalog, '--catalog-item-name', catalogItem];
-    return createArgs;
-
-    // const envCreateCmd = [...envCmd, 'create', ...envArgs, ...createArgs, '--parameters', parameters];
 }
 
 async function getTenant(az: string, config?: ConfigurationFile): Promise<string> {
