@@ -181,34 +181,31 @@ async function getConfiguration(az: string): Promise<Configuration> {
     config.environmentName = setup.name;
     config.environmentType = setup.type;
 
+    config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || '';
+    config.project = core.getInput('project', { required: false }) || file?.project || '';
+    config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || '';
+    config.catalogItem = core.getInput('catalog-item', { required: false }) || file?.['catalog-item'] || '';
+    config.parameters = core.getInput('parameters', { required: false }) || file?.parameters || '';
+
+    config.tenant = core.getInput('tenant', { required: false }) || file?.tenant || '';
+    config.subscription = core.getInput('subscription', { required: false }) || file?.subscription || '';
+
     if (config.action !== SETUP) {
-        config.tenant = core.getInput('tenant', { required: false }) || file?.tenant || (await getTenant(az, config));
+        if (!config.tenant) config.tenant = await getTenant(az, config);
+        if (!config.subscription) config.subscription = await getSubscription(az, config);
 
-        config.subscription =
-            core.getInput('subscription', { required: false }) ||
-            file?.subscription ||
-            (await getSubscription(az, config));
-
-        config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || '';
         if (!config.devcenter) throw Error('Must provide a value for devcenter as action input or in config file.');
-
-        config.project = core.getInput('project', { required: false }) || file?.project || '';
         if (!config.project) throw Error('Must provide a value for project as action input or in config file.');
 
         if (config.action === CREATE || config.action === UPDATE || config.action === ENSURE) {
-            config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || '';
             if (!config.catalog) throw Error('Must provide a value for catalog as action input or in config file.');
-
-            config.catalogItem = core.getInput('catalog-item', { required: false }) || file?.['catalog-item'] || '';
             if (!config.catalogItem)
                 throw Error('Must provide a value for catalog-item as action input or in config file.');
-
-            config.parameters = core.getInput('parameters', { required: false }) || file?.parameters || '';
         }
     }
 
     core.info('Configuration:');
-    core.info(`Configuration:${JSON.stringify(config)}`);
+    core.info(`${JSON.stringify(config, null, 2)}`);
 
     return config;
 }

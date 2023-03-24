@@ -194,30 +194,31 @@ function getConfiguration(az) {
         const setup = getEnvironmentConfig(config);
         config.environmentName = setup.name;
         config.environmentType = setup.type;
+        config.devcenter = core.getInput('devcenter', { required: false }) || (file === null || file === void 0 ? void 0 : file.devcenter) || '';
+        config.project = core.getInput('project', { required: false }) || (file === null || file === void 0 ? void 0 : file.project) || '';
+        config.catalog = core.getInput('catalog', { required: false }) || (file === null || file === void 0 ? void 0 : file.catalog) || '';
+        config.catalogItem = core.getInput('catalog-item', { required: false }) || (file === null || file === void 0 ? void 0 : file['catalog-item']) || '';
+        config.parameters = core.getInput('parameters', { required: false }) || (file === null || file === void 0 ? void 0 : file.parameters) || '';
+        config.tenant = core.getInput('tenant', { required: false }) || (file === null || file === void 0 ? void 0 : file.tenant) || '';
+        config.subscription = core.getInput('subscription', { required: false }) || (file === null || file === void 0 ? void 0 : file.subscription) || '';
         if (config.action !== SETUP) {
-            config.tenant = core.getInput('tenant', { required: false }) || (file === null || file === void 0 ? void 0 : file.tenant) || (yield getTenant(az, config));
-            config.subscription =
-                core.getInput('subscription', { required: false }) ||
-                    (file === null || file === void 0 ? void 0 : file.subscription) ||
-                    (yield getSubscription(az, config));
-            config.devcenter = core.getInput('devcenter', { required: false }) || (file === null || file === void 0 ? void 0 : file.devcenter) || '';
+            if (!config.tenant)
+                config.tenant = yield getTenant(az, config);
+            if (!config.subscription)
+                config.subscription = yield getSubscription(az, config);
             if (!config.devcenter)
                 throw Error('Must provide a value for devcenter as action input or in config file.');
-            config.project = core.getInput('project', { required: false }) || (file === null || file === void 0 ? void 0 : file.project) || '';
             if (!config.project)
                 throw Error('Must provide a value for project as action input or in config file.');
             if (config.action === CREATE || config.action === UPDATE || config.action === ENSURE) {
-                config.catalog = core.getInput('catalog', { required: false }) || (file === null || file === void 0 ? void 0 : file.catalog) || '';
                 if (!config.catalog)
                     throw Error('Must provide a value for catalog as action input or in config file.');
-                config.catalogItem = core.getInput('catalog-item', { required: false }) || (file === null || file === void 0 ? void 0 : file['catalog-item']) || '';
                 if (!config.catalogItem)
                     throw Error('Must provide a value for catalog-item as action input or in config file.');
-                config.parameters = core.getInput('parameters', { required: false }) || (file === null || file === void 0 ? void 0 : file.parameters) || '';
             }
         }
         core.info('Configuration:');
-        core.info(`Configuration:${JSON.stringify(config)}`);
+        core.info(`${JSON.stringify(config, null, 2)}`);
         return config;
     });
 }
