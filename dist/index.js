@@ -186,9 +186,7 @@ function getConfiguration(az) {
         config.prodEnvironmentType =
             core.getInput('prod-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-type']) || PROD;
         config.stagingEnvironmentType =
-            core.getInput('staging-environment-type', { required: false }) ||
-                (file === null || file === void 0 ? void 0 : file['staging-environment-type']) ||
-                STAGING;
+            core.getInput('staging-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['staging-environment-type']) || STAGING;
         config.testEnvironmentType =
             core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || TEST;
         config.devEnvironmentType =

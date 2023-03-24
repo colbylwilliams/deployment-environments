@@ -67,7 +67,7 @@ inputs:
     default: 'ade.yml'
 outputs:
   tenant:
-    description: ''
+    description: 'The environment tenant (GUID).'
   subscription:
     description: 'The environment subscription (GUID).'
   resource-group:

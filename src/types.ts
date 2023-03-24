@@ -13,6 +13,7 @@ export interface Environment {
 }
 
 export interface Configuration {
+    action: string;
     tenant: string;
     subscription: string;
     devcenter: string;
@@ -32,7 +33,6 @@ export interface Configuration {
     create: boolean;
     environmentName: string;
     environmentType: string;
-    action: string;
 }
 
 export interface ConfigurationFile {
