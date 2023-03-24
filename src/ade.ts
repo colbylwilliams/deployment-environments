@@ -28,37 +28,51 @@ export async function run(): Promise<void> {
         core.info('Installing Azure CLI DevCenter extension');
         await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
 
+        const envArgs = [
+            '--only-show-errors',
+            '--dev-center',
+            config.devcenter,
+            '--project',
+            config.project,
+            '--name',
+            config.environmentName
+        ];
+
+        const mutateArgs = [
+            '--environment-type',
+            config.environmentType,
+            '--catalog-name',
+            config.catalog,
+            '--catalog-item-name',
+            config.catalogItem
+        ];
+
         let exists = false;
         let created = false;
         let environment: Environment | undefined;
 
-        const envArgs = ['--only-show-errors', '--dev-center', config.devcenter, '--project', config.project, '--name', config.environmentName];
-        const mutateArgs = ['--environment-type', config.environmentType, '--catalog-name', config.catalog, '--catalog-item-name', config.catalogItem];
-
-        if (config.parameters)
-            mutateArgs.push('--parameters', config.parameters);
-
-        // TODO: Add support for parameters
+        if (config.parameters) mutateArgs.push('--parameters', config.parameters);
 
         const show = await exec.getExecOutput(az, [...envCmd, 'show', ...envArgs], { ignoreReturnCode: true });
         exists = show.exitCode === 0;
 
         if (exists) {
-
             core.info('Found existing environment');
             environment = JSON.parse(show.stdout) as Environment;
 
             if (config.action === 'update') {
-
-                const update = await exec.getExecOutput(az, [...envCmd, 'update', ...envArgs, ...mutateArgs], { ignoreReturnCode: true });
+                core.info('Action is update, attempting to update environment');
+                const update = await exec.getExecOutput(az, [...envCmd, 'update', ...envArgs, ...mutateArgs], {
+                    ignoreReturnCode: true
+                });
                 if (update.exitCode === 0) {
                     core.info('Updated environment');
                     environment = JSON.parse(update.stdout) as Environment;
                 } else {
                     throw Error(`Failed to update environment: ${update.stderr}`);
                 }
-
             } else if (config.action === 'delete') {
+                core.info('Action is delete, attempting to delete environment');
                 const del = await exec.getExecOutput(az, [...envCmd, 'delete', ...envArgs], { ignoreReturnCode: true });
                 if (del.exitCode === 0) {
                     core.info('Deleted environment');
@@ -67,13 +81,10 @@ export async function run(): Promise<void> {
                     throw Error(`Failed to delete environment: ${del.stderr}`);
                 }
             }
-
         } else if (config.action === 'create' || config.action === 'ensure') {
-
             core.info(`Action is ${config.action}, attempting to create environment`);
 
-            const createArgs = getCreateArgs();
-            const create = await exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...createArgs], {
+            const create = await exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...mutateArgs], {
                 ignoreReturnCode: true
             });
 
@@ -85,13 +96,11 @@ export async function run(): Promise<void> {
             } else {
                 throw Error(`Failed to create environment: ${create.stderr}`);
             }
-
         } else {
             core.info(`No existing environment found: code: ${show.exitCode}`);
         }
 
         if (environment) {
-
             const groupId = environment.resourceGroupId;
 
             const resourceGroupKey = groupId.includes('/resourceGroups/') ? '/resourceGroups/' : '/resourcegroups/';
@@ -109,7 +118,6 @@ export async function run(): Promise<void> {
 
         core.setOutput('exists', exists);
         core.setOutput('created', created);
-
     } catch (error) {
         if (error instanceof Error) core.setFailed(error.message);
     }
@@ -126,17 +134,28 @@ async function getConfiguration(az: string): Promise<Configuration> {
     const file = await getConfigurationFile();
 
     config.prefix = core.getInput('prefix', { required: false }) || file?.prefix || 'ci';
-    config.suffix = core.getInput('suffix', { required: false }) || file?.suffix || process.env['GITHUB_REPOSITORY_ID']!;
+    config.suffix =
+        core.getInput('suffix', { required: false }) || file?.suffix || process.env['GITHUB_REPOSITORY_ID']!;
 
-    config.mainBranch = core.getInput('main-branch', { required: false }) || file?.['main-branch'] || 'main';
     config.devBranch = core.getInput('dev-branch', { required: false }) || file?.['dev-branch'] || '';
+    config.mainBranch = core.getInput('main-branch', { required: false }) || file?.['main-branch'] || 'main';
 
-    config.prodEnvironmentName = core.getInput('prod-environment-name', { required: false }) || file?.['prod-environment-name'] || '';
+    config.prodEnvironmentName =
+        core.getInput('prod-environment-name', { required: false }) || file?.['prod-environment-name'] || '';
 
-    config.prodEnvironmentType = core.getInput('prod-environment-type', { required: false }) || file?.['prod-environment-type'] || 'Prod';
-    config.stagingEnvironmentType = core.getInput('staging-environment-type', { required: false }) || file?.['staging-environment-type'] || 'Staging';
-    config.testEnvironmentType = core.getInput('test-environment-type', { required: false }) || file?.['test-environment-type'] || 'Test';
-    config.devEnvironmentType = core.getInput('dev-environment-type', { required: false }) || file?.['dev-environment-type'] || 'Dev';
+    config.prodEnvironmentType =
+        core.getInput('prod-environment-type', { required: false }) || file?.['prod-environment-type'] || 'Prod';
+
+    config.stagingEnvironmentType =
+        core.getInput('staging-environment-type', { required: false }) ||
+        file?.['staging-environment-type'] ||
+        'Staging';
+
+    config.testEnvironmentType =
+        core.getInput('test-environment-type', { required: false }) || file?.['test-environment-type'] || 'Test';
+
+    config.devEnvironmentType =
+        core.getInput('dev-environment-type', { required: false }) || file?.['dev-environment-type'] || 'Dev';
 
     const setup = getEnvironmentConfig(config);
 
@@ -144,9 +163,12 @@ async function getConfiguration(az: string): Promise<Configuration> {
     config.environmentType = setup.type;
 
     if (config.action !== 'setup') {
+        config.tenant = core.getInput('tenant', { required: false }) || file?.tenant || (await getTenant(az, config));
 
-        config.tenant = core.getInput('tenant', { required: false }) || file?.tenant || await getTenant(az, config);
-        config.subscription = core.getInput('subscription', { required: false }) || file?.subscription || await getSubscription(az, config);
+        config.subscription =
+            core.getInput('subscription', { required: false }) ||
+            file?.subscription ||
+            (await getSubscription(az, config));
 
         config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || '';
         if (!config.devcenter)
@@ -177,7 +199,6 @@ async function getConfiguration(az: string): Promise<Configuration> {
 }
 
 async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
-
     const defaultPattern = 'ade.yml';
     const pattern = core.getInput('config', { required: false }) || defaultPattern;
 
@@ -223,7 +244,10 @@ function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
     const setup: EnvironmentConfig = {} as EnvironmentConfig;
 
     if (isPr) {
-        setup.type = context.payload.pull_request!['base']['ref'] == config.mainBranch && config.devBranch ? config.stagingEnvironmentType : config.testEnvironmentType;
+        setup.type =
+            context.payload.pull_request!['base']['ref'] == config.mainBranch && config.devBranch
+                ? config.stagingEnvironmentType
+                : config.testEnvironmentType;
     } else {
         setup.type = refName == config.mainBranch ? config.prodEnvironmentType : config.devEnvironmentType;
     }
@@ -313,5 +337,5 @@ async function getSubscription(az: string, config?: ConfigurationFile): Promise<
     subscription = subscriptionId.stdout.trim();
     core.info(`Found subscription: ${subscription}`);
 
-    return subscription.replace('/', '').replace('subscriptions', '');;
+    return subscription.replace('/', '').replace('subscriptions', '');
 }
