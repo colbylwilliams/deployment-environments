@@ -6,12 +6,13 @@ inputs:
     required: false
     description: 'The Azure tenant ID (GUID).'
   subscription:
+    required: false
     description: 'The Azure subscription (GUID).'
   devcenter:
-    required: true
+    required: false
     description: 'The DevCenter name.'
   project:
-    required: true
+    required: false
     description: 'The Project name.'
   catalog:
     required: false
@@ -29,9 +30,17 @@ inputs:
     required: false
     description: 'Create deployment environment if it does not exist'
     default: 'false'
+  action:
+    required: true
+    description: 'Action to take on the environment. Can be setup, get, create, update, ensure, or delete.'
+    default: 'setup'
   parameters:
     required: false
     description: ''
+  config:
+    required: false
+    description: 'Path to a YAML configuration file.'
+    default: 'ade.yml'
 outputs:
   tenant:
     description: ''

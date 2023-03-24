@@ -45,59 +45,22 @@ const exec = __importStar(__nccwpck_require__(514));
 const io = __importStar(__nccwpck_require__(436));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const getTenantIdCmd = ['account', 'show', '--query', 'tenantId', '--output', 'tsv'];
-        const devcenterExtCmd = ['extension', 'add', '--name', 'devcenter', '--upgrade'];
-        const cmdBase = ['devcenter', 'dev', 'environment'];
+        const envCmd = ['devcenter', 'dev', 'environment'];
         try {
-            const devcenter = core.getInput('devcenter', { required: true });
-            if (!devcenter) {
-                throw new Error('Input devcenter is required');
-            }
-            core.info(`Found input devcenter: ${devcenter}`);
-            const project = core.getInput('project', { required: true });
-            if (!project) {
-                throw new Error('Input project is required');
-            }
-            core.info(`Found input project: ${project}`);
-            const environmentName = core.getInput('environment-name', { required: true });
-            if (!environmentName) {
-                throw new Error('Input environment-name is required');
-            }
-            core.info(`Found input environment-name: ${environmentName}`);
             const az = yield io.which('az', true);
             core.debug(`az cli path: ${az}`);
-            let tenant = core.getInput('tenant', { required: false });
-            if (tenant) {
-                core.info(`Found input tenant: ${tenant}`);
-            }
-            else {
-                core.info('Input tenant-id is not set, attempting to get it from the azure cli');
-                const tenantId = yield exec.getExecOutput(az, getTenantIdCmd);
-                if (!tenantId.stdout)
-                    throw new Error(`Failed to get tenant id from Azure: ${tenantId.stderr}`);
-                tenant = tenantId.stdout.trim();
-                core.info(`Found tenant: ${tenant}`);
-            }
+            const tenant = yield getTenant(az);
             core.setOutput('tenant', tenant);
             core.info('Installing Azure CLI DevCenter extension');
-            yield exec.exec(az, devcenterExtCmd);
-            const baseArgs = [
-                '--only-show-errors',
-                '--dev-center',
-                devcenter,
-                '--project',
-                project,
-                '--name',
-                environmentName
-            ];
-            const showCmd = [...cmdBase, 'show', ...baseArgs];
+            yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
             let exists = false;
             let created = false;
             let environment;
-            const show = yield exec.getExecOutput(az, showCmd, { ignoreReturnCode: true });
-            if (show.exitCode === 0) {
-                exists = true;
-                core.debug('Found existing environment');
+            const envArgs = getEnvArgs();
+            const show = yield exec.getExecOutput(az, [...envCmd, 'show', ...envArgs], { ignoreReturnCode: true });
+            exists = show.exitCode === 0;
+            if (exists) {
+                core.info('Found existing environment');
                 environment = JSON.parse(show.stdout);
             }
             else {
@@ -105,41 +68,10 @@ function run() {
                 core.info(`Input create: ${shouldCreate}`);
                 if (shouldCreate) {
                     core.info('Input create is true, attempting to create environment');
-                    const environmentType = core.getInput('environment-type', { required: true });
-                    if (!environmentType) {
-                        throw new Error('Input environment-type is required to create environment');
-                    }
-                    core.info(`Found input environment-type: ${environmentType}`);
-                    const catalog = core.getInput('catalog', { required: true });
-                    if (!catalog) {
-                        throw new Error('Input catalog is required to create environment');
-                    }
-                    core.info(`Found input catalog: ${catalog}`);
-                    const catalogItem = core.getInput('catalog-item', { required: true });
-                    if (!catalogItem) {
-                        throw new Error('Input catalog-item is required to create environment');
-                    }
-                    core.info(`Found input catalog-item: ${catalogItem}`);
-                    const parameters = core.getInput('parameters', { required: false });
-                    if (parameters)
-                        core.info(`Found input parameters: ${parameters}`);
-                    const createCmd = [
-                        ...cmdBase,
-                        'create',
-                        ...baseArgs,
-                        '--environment-type',
-                        environmentType,
-                        '--catalog-name',
-                        catalog,
-                        '--catalog-item-name',
-                        catalogItem,
-                        '--parameters',
-                        parameters
-                    ];
-                    const create = yield exec.getExecOutput(az, createCmd, { ignoreReturnCode: true });
-                    if (create.exitCode === 0) {
-                        exists = true;
-                        created = true;
+                    const createArgs = getCreateArgs();
+                    const create = yield exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...createArgs], { ignoreReturnCode: true });
+                    exists = created = create.exitCode === 0;
+                    if (created) {
                         core.info('Created environment');
                         environment = JSON.parse(create.stdout);
                     }
@@ -172,6 +104,58 @@ function run() {
     });
 }
 exports.run = run;
+function getEnvArgs() {
+    const devcenter = core.getInput('devcenter', { required: true });
+    if (!devcenter)
+        throw new Error('Input devcenter is required');
+    core.info(`Found input devcenter: ${devcenter}`);
+    const project = core.getInput('project', { required: true });
+    if (!project)
+        throw new Error('Input project is required');
+    core.info(`Found input project: ${project}`);
+    const envName = core.getInput('environment-name', { required: true });
+    if (!envName)
+        throw new Error('Input environment-name is required');
+    core.info(`Found input environment-name: ${envName}`);
+    const envArgs = ['--only-show-errors', '--dev-center', devcenter, '--project', project, '--name', envName];
+    return envArgs;
+}
+function getCreateArgs() {
+    const envType = core.getInput('environment-type', { required: true });
+    if (!envType)
+        throw new Error('Input environment-type is required to create environment');
+    core.info(`Found input environment-type: ${envType}`);
+    const catalog = core.getInput('catalog', { required: true });
+    if (!catalog)
+        throw new Error('Input catalog is required to create environment');
+    core.info(`Found input catalog: ${catalog}`);
+    const catalogItem = core.getInput('catalog-item', { required: true });
+    if (!catalogItem)
+        throw new Error('Input catalog-item is required to create environment');
+    core.info(`Found input catalog-item: ${catalogItem}`);
+    // const parameters: string = core.getInput('parameters', { required: false });
+    // if (parameters) core.info(`Found input parameters: ${parameters}`);
+    const createArgs = ['--environment-type', envType, '--catalog-name', catalog, '--catalog-item-name', catalogItem];
+    return createArgs;
+    // const envCreateCmd = [...envCmd, 'create', ...envArgs, ...createArgs, '--parameters', parameters];
+}
+function getTenant(az) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let tenant = core.getInput('tenant', { required: false });
+        if (tenant) {
+            core.info(`Found input tenant: ${tenant}`);
+            return tenant;
+        }
+        core.info('Input tenant is not set, attempting to get it from the azure cli');
+        const tenantCmd = ['account', 'show', '--query', 'tenantId', '--output', 'tsv'];
+        const tenantId = yield exec.getExecOutput(az, tenantCmd);
+        if (!tenantId.stdout)
+            throw new Error(`Failed to get tenant id from Azure: ${tenantId.stderr}`);
+        tenant = tenantId.stdout.trim();
+        core.info(`Found tenant: ${tenant}`);
+        return tenant;
+    });
+}
 
 
 /***/ }),
