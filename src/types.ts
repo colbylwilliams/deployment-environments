@@ -19,7 +19,7 @@ export interface Configuration {
     project: string;
     catalog: string;
     catalogItem: string;
-    parameters: object;
+    parameters: string;
     prefix: string;
     suffix: string;
     mainBranch: string;
@@ -32,6 +32,7 @@ export interface Configuration {
     create: boolean;
     environmentName: string;
     environmentType: string;
+    action: string;
 }
 
 export interface ConfigurationFile {
@@ -41,7 +42,7 @@ export interface ConfigurationFile {
     project?: string;
     catalog?: string;
     'catalog-item'?: string;
-    parameters: object;
+    parameters: string;
     prefix?: string;
     suffix?: string;
     'main-branch'?: string;

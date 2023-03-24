@@ -32,45 +32,75 @@ export async function run(): Promise<void> {
         let created = false;
         let environment: Environment | undefined;
 
-        const envArgs = getEnvArgs(config);
+        const envArgs = ['--only-show-errors', '--dev-center', config.devcenter, '--project', config.project, '--name', config.environmentName];
+        const mutateArgs = ['--environment-type', config.environmentType, '--catalog-name', config.catalog, '--catalog-item-name', config.catalogItem];
+
+        if (config.parameters)
+            mutateArgs.push('--parameters', config.parameters);
+
+        // TODO: Add support for parameters
+
         const show = await exec.getExecOutput(az, [...envCmd, 'show', ...envArgs], { ignoreReturnCode: true });
         exists = show.exitCode === 0;
 
         if (exists) {
+
             core.info('Found existing environment');
             environment = JSON.parse(show.stdout) as Environment;
-        } else {
-            const shouldCreate = core.getBooleanInput('create');
-            core.info(`Input create: ${shouldCreate}`);
 
-            if (shouldCreate) {
-                core.info('Input create is true, attempting to create environment');
+            if (config.action === 'update') {
 
-                const createArgs = getCreateArgs();
-                const create = await exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...createArgs], {
-                    ignoreReturnCode: true
-                });
-                exists = created = create.exitCode === 0;
-                if (created) {
-                    core.info('Created environment');
-                    environment = JSON.parse(create.stdout) as Environment;
+                const update = await exec.getExecOutput(az, [...envCmd, 'update', ...envArgs, ...mutateArgs], { ignoreReturnCode: true });
+                if (update.exitCode === 0) {
+                    core.info('Updated environment');
+                    environment = JSON.parse(update.stdout) as Environment;
                 } else {
-                    throw Error(`Failed to create environment: ${create.stderr}`);
+                    throw Error(`Failed to update environment: ${update.stderr}`);
                 }
-            } else {
-                core.info(`No existing environment found: code: ${show.exitCode}`);
+
+            } else if (config.action === 'delete') {
+                const del = await exec.getExecOutput(az, [...envCmd, 'delete', ...envArgs], { ignoreReturnCode: true });
+                if (del.exitCode === 0) {
+                    core.info('Deleted environment');
+                    // environment = undefined;
+                } else {
+                    throw Error(`Failed to delete environment: ${del.stderr}`);
+                }
             }
+
+        } else if (config.action === 'create' || config.action === 'ensure') {
+
+            core.info(`Action is ${config.action}, attempting to create environment`);
+
+            const createArgs = getCreateArgs();
+            const create = await exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...createArgs], {
+                ignoreReturnCode: true
+            });
+
+            exists = created = create.exitCode === 0;
+
+            if (created) {
+                core.info('Created environment');
+                environment = JSON.parse(create.stdout) as Environment;
+            } else {
+                throw Error(`Failed to create environment: ${create.stderr}`);
+            }
+
+        } else {
+            core.info(`No existing environment found: code: ${show.exitCode}`);
         }
 
         if (environment) {
+
             const groupId = environment.resourceGroupId;
 
             const resourceGroupKey = groupId.includes('/resourceGroups/') ? '/resourceGroups/' : '/resourcegroups/';
 
             const group = groupId.split(resourceGroupKey)[1].split('/')[0];
             const subscription = groupId.split('/subscriptions/')[1].split('/')[0];
-            const portalUrl = `https://portal.azure.com/#@${tenant}/resource${groupId}`;
+            const portalUrl = `https://portal.azure.com/#@${config.tenant}/resource${groupId}`;
 
+            core.setOutput('tenant', config.tenant);
             core.setOutput('subscription', subscription);
             core.setOutput('resource-group', group);
             core.setOutput('resource-group-id', groupId);
@@ -79,6 +109,7 @@ export async function run(): Promise<void> {
 
         core.setOutput('exists', exists);
         core.setOutput('created', created);
+
     } catch (error) {
         if (error instanceof Error) core.setFailed(error.message);
     }
@@ -89,7 +120,8 @@ async function getConfiguration(az: string): Promise<Configuration> {
     const actions = ['setup', 'get', 'create', 'update', 'ensure', 'delete'];
 
     config.action = (core.getInput('action', { required: false }) || 'setup').toLowerCase();
-    if (!actions.includes(config.action)) throw Error(`Invalid action: ${config.action}. Must be one of: ${actions.join(', ')}`);
+    if (!actions.includes(config.action))
+        throw Error(`Invalid action: ${config.action}. Must be one of: ${actions.join(', ')}`);
 
     const file = await getConfigurationFile();
 
@@ -117,22 +149,29 @@ async function getConfiguration(az: string): Promise<Configuration> {
         config.subscription = core.getInput('subscription', { required: false }) || file?.subscription || await getSubscription(az, config);
 
         config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || '';
-        if (!config.devcenter) throw Error('Must provide a value for devcenter as action input or in config file.');
+        if (!config.devcenter)
+            throw Error('Must provide a value for devcenter as action input or in config file.');
 
         config.project = core.getInput('project', { required: false }) || file?.project || '';
-        if (!config.project) throw Error('Must provide a value for project as action input or in config file.');
+        if (!config.project)
+            throw Error('Must provide a value for project as action input or in config file.');
 
         if (config.action === 'create' || config.action === 'update' || config.action === 'ensure') {
 
             config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || '';
-            if (!config.catalog) throw Error('Must provide a value for catalog as action input or in config file.');
+            if (!config.catalog)
+                throw Error('Must provide a value for catalog as action input or in config file.');
 
             config.catalogItem = core.getInput('catalog-item', { required: false }) || file?.['catalog-item'] || '';
-            if (!config.catalogItem) throw Error('Must provide a value for catalog-item as action input or in config file.');
+            if (!config.catalogItem)
+                throw Error('Must provide a value for catalog-item as action input or in config file.');
 
             config.parameters = core.getInput('parameters', { required: false }) || file?.parameters || '';
         }
     }
+
+    core.info('Configuration:');
+    core.info(`Configuration:${JSON.stringify(config)}`);
 
     return config;
 }
@@ -201,23 +240,6 @@ function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
     core.info(`Resolved environment name: ${setup.name}`);
 
     return setup;
-}
-
-function getEnvArgs(): string[] {
-    const devcenter: string = core.getInput('devcenter', { required: true });
-    if (!devcenter) throw new Error('Input devcenter is required');
-    core.info(`Found input devcenter: ${devcenter}`);
-
-    const project: string = core.getInput('project', { required: true });
-    if (!project) throw new Error('Input project is required');
-    core.info(`Found input project: ${project}`);
-
-    const envName: string = core.getInput('environment-name', { required: true });
-    if (!envName) throw new Error('Input environment-name is required');
-    core.info(`Found input environment-name: ${envName}`);
-
-    const envArgs = ['--only-show-errors', '--dev-center', devcenter, '--project', project, '--name', envName];
-    return envArgs;
 }
 
 function getCreateArgs(): string[] {
