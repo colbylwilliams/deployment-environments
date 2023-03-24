@@ -37,16 +37,16 @@ export async function run(): Promise<void> {
         const config = await getConfiguration(az);
 
         if (config.action === SETUP) {
-            core.info('Setting outputs');
-            core.info(`name: ${config.environmentName}`);
+            core.info('Setting outputs:');
+            core.info(`  name: ${config.environmentName}`);
             core.setOutput('name', config.environmentName);
-            core.info(`type: ${config.environmentType}`);
+            core.info(`  type: ${config.environmentType}`);
             core.setOutput('type', config.environmentType);
 
-            core.info('Setting environment variables');
-            core.info(`ADE_NAME: ${config.environmentName}`);
+            core.info('Setting environment variables:');
+            core.info(`  ADE_NAME: ${config.environmentName}`);
             core.exportVariable('ADE_NAME', config.environmentName);
-            core.info(`ADE_TYPE: ${config.environmentType}`);
+            core.info(`  ADE_TYPE: ${config.environmentType}`);
             core.exportVariable('ADE_TYPE', config.environmentType);
 
             return;
