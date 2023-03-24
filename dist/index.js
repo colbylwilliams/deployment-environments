@@ -47,6 +47,21 @@ const glob = __importStar(__nccwpck_require__(8090));
 const io = __importStar(__nccwpck_require__(7436));
 const fs = __importStar(__nccwpck_require__(3292));
 const yaml = __importStar(__nccwpck_require__(1917));
+const AUTO = 'auto';
+const SETUP = 'setup';
+const GET = 'get';
+const CREATE = 'create';
+const UPDATE = 'update';
+const ENSURE = 'ensure';
+const DELETE = 'delete';
+const ACTIONS = [SETUP, GET, CREATE, UPDATE, ENSURE, DELETE];
+const PROD = 'prod';
+const STAGING = 'staging';
+const TEST = 'test';
+const DEV = 'dev';
+const MAIN_BRANCH = 'main';
+const PREFIX = 'ci';
+const DEFAULT_CONFIG_FILE = 'ade.yml';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const envCmd = ['devcenter', 'dev', 'environment'];
@@ -56,7 +71,7 @@ function run() {
             const config = yield getConfiguration(az);
             core.setOutput('name', config.environmentName);
             core.setOutput('type', config.environmentType);
-            if (config.action === 'setup') {
+            if (config.action === SETUP) {
                 return;
             }
             core.setOutput('tenant', config.tenant);
@@ -89,9 +104,9 @@ function run() {
             if (exists) {
                 core.info('Found existing environment');
                 environment = JSON.parse(show.stdout);
-                if (config.action === 'update') {
+                if (config.action === UPDATE) {
                     core.info('Action is update, attempting to update environment');
-                    const update = yield exec.getExecOutput(az, [...envCmd, 'update', ...envArgs, ...mutateArgs], {
+                    const update = yield exec.getExecOutput(az, [...envCmd, UPDATE, ...envArgs, ...mutateArgs], {
                         ignoreReturnCode: true
                     });
                     if (update.exitCode === 0) {
@@ -102,9 +117,9 @@ function run() {
                         throw Error(`Failed to update environment: ${update.stderr}`);
                     }
                 }
-                else if (config.action === 'delete') {
+                else if (config.action === DELETE) {
                     core.info('Action is delete, attempting to delete environment');
-                    const del = yield exec.getExecOutput(az, [...envCmd, 'delete', ...envArgs], { ignoreReturnCode: true });
+                    const del = yield exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs], { ignoreReturnCode: true });
                     if (del.exitCode === 0) {
                         core.info('Deleted environment');
                         // environment = undefined;
@@ -114,9 +129,9 @@ function run() {
                     }
                 }
             }
-            else if (config.action === 'create' || config.action === 'ensure') {
+            else if (config.action === CREATE || config.action === ENSURE) {
                 core.info(`Action is ${config.action}, attempting to create environment`);
-                const create = yield exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...mutateArgs], {
+                const create = yield exec.getExecOutput(az, [...envCmd, CREATE, ...envArgs, ...mutateArgs], {
                     ignoreReturnCode: true
                 });
                 exists = created = create.exitCode === 0;
@@ -156,32 +171,32 @@ exports.run = run;
 function getConfiguration(az) {
     return __awaiter(this, void 0, void 0, function* () {
         const config = {};
-        const actions = ['setup', 'get', 'create', 'update', 'ensure', 'delete'];
-        config.action = (core.getInput('action', { required: false }) || 'setup').toLowerCase();
-        if (!actions.includes(config.action))
-            throw Error(`Invalid action: ${config.action}. Must be one of: ${actions.join(', ')}`);
+        const action = (core.getInput('action', { required: false }) || SETUP).toLowerCase();
+        config.action = action === AUTO ? getAutoAction() : action;
+        if (!ACTIONS.includes(config.action))
+            throw Error(`Invalid action: ${config.action}. Must be one of: ${ACTIONS.join(', ')}`);
         const file = yield getConfigurationFile();
-        config.prefix = core.getInput('prefix', { required: false }) || (file === null || file === void 0 ? void 0 : file.prefix) || 'ci';
+        config.prefix = core.getInput('prefix', { required: false }) || (file === null || file === void 0 ? void 0 : file.prefix) || PREFIX;
         config.suffix =
             core.getInput('suffix', { required: false }) || (file === null || file === void 0 ? void 0 : file.suffix) || process.env['GITHUB_REPOSITORY_ID'];
         config.devBranch = core.getInput('dev-branch', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-branch']) || '';
-        config.mainBranch = core.getInput('main-branch', { required: false }) || (file === null || file === void 0 ? void 0 : file['main-branch']) || 'main';
+        config.mainBranch = core.getInput('main-branch', { required: false }) || (file === null || file === void 0 ? void 0 : file['main-branch']) || MAIN_BRANCH;
         config.prodEnvironmentName =
             core.getInput('prod-environment-name', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-name']) || '';
         config.prodEnvironmentType =
-            core.getInput('prod-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-type']) || 'Prod';
+            core.getInput('prod-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['prod-environment-type']) || PROD;
         config.stagingEnvironmentType =
             core.getInput('staging-environment-type', { required: false }) ||
                 (file === null || file === void 0 ? void 0 : file['staging-environment-type']) ||
-                'Staging';
+                STAGING;
         config.testEnvironmentType =
-            core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || 'Test';
+            core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || TEST;
         config.devEnvironmentType =
-            core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || 'Dev';
+            core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || DEV;
         const setup = getEnvironmentConfig(config);
         config.environmentName = setup.name;
         config.environmentType = setup.type;
-        if (config.action !== 'setup') {
+        if (config.action !== SETUP) {
             config.tenant = core.getInput('tenant', { required: false }) || (file === null || file === void 0 ? void 0 : file.tenant) || (yield getTenant(az, config));
             config.subscription =
                 core.getInput('subscription', { required: false }) ||
@@ -193,7 +208,7 @@ function getConfiguration(az) {
             config.project = core.getInput('project', { required: false }) || (file === null || file === void 0 ? void 0 : file.project) || '';
             if (!config.project)
                 throw Error('Must provide a value for project as action input or in config file.');
-            if (config.action === 'create' || config.action === 'update' || config.action === 'ensure') {
+            if (config.action === CREATE || config.action === UPDATE || config.action === ENSURE) {
                 config.catalog = core.getInput('catalog', { required: false }) || (file === null || file === void 0 ? void 0 : file.catalog) || '';
                 if (!config.catalog)
                     throw Error('Must provide a value for catalog as action input or in config file.');
@@ -210,9 +225,8 @@ function getConfiguration(az) {
 }
 function getConfigurationFile() {
     return __awaiter(this, void 0, void 0, function* () {
-        const defaultPattern = 'ade.yml';
-        const pattern = core.getInput('config', { required: false }) || defaultPattern;
-        const isDefault = pattern === defaultPattern;
+        const pattern = core.getInput('config', { required: false }) || DEFAULT_CONFIG_FILE;
+        const isDefault = pattern === DEFAULT_CONFIG_FILE;
         const defaultText = isDefault ? ' (default)' : '';
         core.info(`Found input config: ${pattern}${defaultText}`);
         const globber = yield glob.create(pattern);
@@ -304,6 +318,34 @@ function getSubscription(az, config) {
         core.info(`Found subscription: ${subscription}`);
         return subscription.replace('/', '').replace('subscriptions', '');
     });
+}
+function getAutoAction() {
+    var _a, _b;
+    const context = github.context;
+    const { eventName } = context;
+    core.info('Input action set to auto, attempting to get it from the event type');
+    if (eventName == 'pull_request') {
+        const prAction = (_a = context.payload.action) === null || _a === void 0 ? void 0 : _a.toLowerCase();
+        if (!prAction)
+            throw new Error(`Failed to get pull request action from context`);
+        if (['opened', 'synchronize', 'reopened'].includes(prAction))
+            return 'ensure';
+        if (prAction == 'closed')
+            return 'delete';
+        throw new Error(`Unsupported pull request action: ${prAction}`);
+    }
+    if (eventName == 'create' || eventName == 'delete') {
+        const refType = (_b = context.payload.ref_type) === null || _b === void 0 ? void 0 : _b.toLowerCase();
+        if (!refType)
+            throw new Error(`Failed to get ref type from context`);
+        if (refType == 'branch')
+            return eventName;
+        throw new Error(`Unsupported ref type: ${refType}`);
+    }
+    if (eventName == 'push') {
+        return 'ensure';
+    }
+    throw new Error(`Unsupported event type: ${eventName}`);
 }
 
 

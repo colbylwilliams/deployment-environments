@@ -7,6 +7,26 @@ import * as fs from 'fs/promises';
 import * as yaml from 'js-yaml';
 import { Configuration, ConfigurationFile, Environment, EnvironmentConfig } from './types';
 
+const AUTO = 'auto';
+const SETUP = 'setup';
+const GET = 'get';
+const CREATE = 'create';
+const UPDATE = 'update';
+const ENSURE = 'ensure';
+const DELETE = 'delete';
+const ACTIONS = [SETUP, GET, CREATE, UPDATE, ENSURE, DELETE];
+
+const PROD = 'prod';
+const STAGING = 'staging';
+const TEST = 'test';
+const DEV = 'dev';
+
+const MAIN_BRANCH = 'main';
+
+const PREFIX = 'ci';
+
+const DEFAULT_CONFIG_FILE = 'ade.yml';
+
 export async function run(): Promise<void> {
     const envCmd = ['devcenter', 'dev', 'environment'];
 
@@ -19,7 +39,7 @@ export async function run(): Promise<void> {
         core.setOutput('name', config.environmentName);
         core.setOutput('type', config.environmentType);
 
-        if (config.action === 'setup') {
+        if (config.action === SETUP) {
             return;
         }
 
@@ -60,9 +80,9 @@ export async function run(): Promise<void> {
             core.info('Found existing environment');
             environment = JSON.parse(show.stdout) as Environment;
 
-            if (config.action === 'update') {
+            if (config.action === UPDATE) {
                 core.info('Action is update, attempting to update environment');
-                const update = await exec.getExecOutput(az, [...envCmd, 'update', ...envArgs, ...mutateArgs], {
+                const update = await exec.getExecOutput(az, [...envCmd, UPDATE, ...envArgs, ...mutateArgs], {
                     ignoreReturnCode: true
                 });
                 if (update.exitCode === 0) {
@@ -71,9 +91,9 @@ export async function run(): Promise<void> {
                 } else {
                     throw Error(`Failed to update environment: ${update.stderr}`);
                 }
-            } else if (config.action === 'delete') {
+            } else if (config.action === DELETE) {
                 core.info('Action is delete, attempting to delete environment');
-                const del = await exec.getExecOutput(az, [...envCmd, 'delete', ...envArgs], { ignoreReturnCode: true });
+                const del = await exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs], { ignoreReturnCode: true });
                 if (del.exitCode === 0) {
                     core.info('Deleted environment');
                     // environment = undefined;
@@ -81,10 +101,10 @@ export async function run(): Promise<void> {
                     throw Error(`Failed to delete environment: ${del.stderr}`);
                 }
             }
-        } else if (config.action === 'create' || config.action === 'ensure') {
+        } else if (config.action === CREATE || config.action === ENSURE) {
             core.info(`Action is ${config.action}, attempting to create environment`);
 
-            const create = await exec.getExecOutput(az, [...envCmd, 'create', ...envArgs, ...mutateArgs], {
+            const create = await exec.getExecOutput(az, [...envCmd, CREATE, ...envArgs, ...mutateArgs], {
                 ignoreReturnCode: true
             });
 
@@ -125,44 +145,43 @@ export async function run(): Promise<void> {
 
 async function getConfiguration(az: string): Promise<Configuration> {
     const config: Configuration = {} as Configuration;
-    const actions = ['setup', 'get', 'create', 'update', 'ensure', 'delete'];
 
-    config.action = (core.getInput('action', { required: false }) || 'setup').toLowerCase();
-    if (!actions.includes(config.action))
-        throw Error(`Invalid action: ${config.action}. Must be one of: ${actions.join(', ')}`);
+    const action = (core.getInput('action', { required: false }) || SETUP).toLowerCase();
+    config.action = action === AUTO ? getAutoAction() : action;
+
+    if (!ACTIONS.includes(config.action))
+        throw Error(`Invalid action: ${config.action}. Must be one of: ${ACTIONS.join(', ')}`);
 
     const file = await getConfigurationFile();
 
-    config.prefix = core.getInput('prefix', { required: false }) || file?.prefix || 'ci';
+    config.prefix = core.getInput('prefix', { required: false }) || file?.prefix || PREFIX;
     config.suffix =
         core.getInput('suffix', { required: false }) || file?.suffix || process.env['GITHUB_REPOSITORY_ID']!;
 
     config.devBranch = core.getInput('dev-branch', { required: false }) || file?.['dev-branch'] || '';
-    config.mainBranch = core.getInput('main-branch', { required: false }) || file?.['main-branch'] || 'main';
+    config.mainBranch = core.getInput('main-branch', { required: false }) || file?.['main-branch'] || MAIN_BRANCH;
 
     config.prodEnvironmentName =
         core.getInput('prod-environment-name', { required: false }) || file?.['prod-environment-name'] || '';
 
     config.prodEnvironmentType =
-        core.getInput('prod-environment-type', { required: false }) || file?.['prod-environment-type'] || 'Prod';
+        core.getInput('prod-environment-type', { required: false }) || file?.['prod-environment-type'] || PROD;
 
     config.stagingEnvironmentType =
-        core.getInput('staging-environment-type', { required: false }) ||
-        file?.['staging-environment-type'] ||
-        'Staging';
+        core.getInput('staging-environment-type', { required: false }) || file?.['staging-environment-type'] || STAGING;
 
     config.testEnvironmentType =
-        core.getInput('test-environment-type', { required: false }) || file?.['test-environment-type'] || 'Test';
+        core.getInput('test-environment-type', { required: false }) || file?.['test-environment-type'] || TEST;
 
     config.devEnvironmentType =
-        core.getInput('dev-environment-type', { required: false }) || file?.['dev-environment-type'] || 'Dev';
+        core.getInput('dev-environment-type', { required: false }) || file?.['dev-environment-type'] || DEV;
 
     const setup = getEnvironmentConfig(config);
 
     config.environmentName = setup.name;
     config.environmentType = setup.type;
 
-    if (config.action !== 'setup') {
+    if (config.action !== SETUP) {
         config.tenant = core.getInput('tenant', { required: false }) || file?.tenant || (await getTenant(az, config));
 
         config.subscription =
@@ -176,7 +195,7 @@ async function getConfiguration(az: string): Promise<Configuration> {
         config.project = core.getInput('project', { required: false }) || file?.project || '';
         if (!config.project) throw Error('Must provide a value for project as action input or in config file.');
 
-        if (config.action === 'create' || config.action === 'update' || config.action === 'ensure') {
+        if (config.action === CREATE || config.action === UPDATE || config.action === ENSURE) {
             config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || '';
             if (!config.catalog) throw Error('Must provide a value for catalog as action input or in config file.');
 
@@ -195,10 +214,9 @@ async function getConfiguration(az: string): Promise<Configuration> {
 }
 
 async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
-    const defaultPattern = 'ade.yml';
-    const pattern = core.getInput('config', { required: false }) || defaultPattern;
+    const pattern = core.getInput('config', { required: false }) || DEFAULT_CONFIG_FILE;
 
-    const isDefault = pattern === defaultPattern;
+    const isDefault = pattern === DEFAULT_CONFIG_FILE;
     const defaultText = isDefault ? ' (default)' : '';
     core.info(`Found input config: ${pattern}${defaultText}`);
 
@@ -312,4 +330,33 @@ async function getSubscription(az: string, config?: ConfigurationFile): Promise<
     core.info(`Found subscription: ${subscription}`);
 
     return subscription.replace('/', '').replace('subscriptions', '');
+}
+
+function getAutoAction(): string {
+    const context = github.context;
+
+    const { eventName } = context;
+
+    core.info('Input action set to auto, attempting to get it from the event type');
+
+    if (eventName == 'pull_request') {
+        const prAction = context.payload.action?.toLowerCase();
+        if (!prAction) throw new Error(`Failed to get pull request action from context`);
+        if (['opened', 'synchronize', 'reopened'].includes(prAction)) return 'ensure';
+        if (prAction == 'closed') return 'delete';
+        throw new Error(`Unsupported pull request action: ${prAction}`);
+    }
+
+    if (eventName == 'create' || eventName == 'delete') {
+        const refType = context.payload.ref_type?.toLowerCase();
+        if (!refType) throw new Error(`Failed to get ref type from context`);
+        if (refType == 'branch') return eventName;
+        throw new Error(`Unsupported ref type: ${refType}`);
+    }
+
+    if (eventName == 'push') {
+        return 'ensure';
+    }
+
+    throw new Error(`Unsupported event type: ${eventName}`);
 }
