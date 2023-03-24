@@ -81,7 +81,7 @@ export async function run(): Promise<void> {
             environment = JSON.parse(show.stdout) as Environment;
 
             if (config.action === UPDATE) {
-                core.info('Action is update, attempting to update environment');
+                core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
                 const update = await exec.getExecOutput(az, [...envCmd, UPDATE, ...envArgs, ...mutateArgs], {
                     ignoreReturnCode: true
                 });
@@ -89,20 +89,21 @@ export async function run(): Promise<void> {
                     core.info('Updated environment');
                     environment = JSON.parse(update.stdout) as Environment;
                 } else {
-                    throw Error(`Failed to update environment: ${update.stderr}`);
+                    throw Error(`Failed to ${config.action} environment: ${update.stderr}`);
                 }
             } else if (config.action === DELETE) {
-                core.info('Action is delete, attempting to delete environment');
+                core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
                 const del = await exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs], { ignoreReturnCode: true });
                 if (del.exitCode === 0) {
                     core.info('Deleted environment');
                     // environment = undefined;
                 } else {
-                    throw Error(`Failed to delete environment: ${del.stderr}`);
+                    throw Error(`Failed to ${config.action} environment: ${del.stderr}`);
                 }
             }
         } else if (config.action === CREATE || config.action === ENSURE) {
-            core.info(`Action is ${config.action}, attempting to create environment`);
+            core.info(`No existing environment found`);
+            core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
 
             const create = await exec.getExecOutput(az, [...envCmd, CREATE, ...envArgs, ...mutateArgs], {
                 ignoreReturnCode: true
@@ -114,7 +115,7 @@ export async function run(): Promise<void> {
                 core.info('Created environment');
                 environment = JSON.parse(create.stdout) as Environment;
             } else {
-                throw Error(`Failed to create environment: ${create.stderr}`);
+                throw Error(`Failed to ${config.action} environment: ${create.stderr}`);
             }
         } else {
             core.info(`No existing environment found: code: ${show.exitCode}`);

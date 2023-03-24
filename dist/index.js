@@ -105,7 +105,7 @@ function run() {
                 core.info('Found existing environment');
                 environment = JSON.parse(show.stdout);
                 if (config.action === UPDATE) {
-                    core.info('Action is update, attempting to update environment');
+                    core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
                     const update = yield exec.getExecOutput(az, [...envCmd, UPDATE, ...envArgs, ...mutateArgs], {
                         ignoreReturnCode: true
                     });
@@ -114,23 +114,24 @@ function run() {
                         environment = JSON.parse(update.stdout);
                     }
                     else {
-                        throw Error(`Failed to update environment: ${update.stderr}`);
+                        throw Error(`Failed to ${config.action} environment: ${update.stderr}`);
                     }
                 }
                 else if (config.action === DELETE) {
-                    core.info('Action is delete, attempting to delete environment');
+                    core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
                     const del = yield exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs], { ignoreReturnCode: true });
                     if (del.exitCode === 0) {
                         core.info('Deleted environment');
                         // environment = undefined;
                     }
                     else {
-                        throw Error(`Failed to delete environment: ${del.stderr}`);
+                        throw Error(`Failed to ${config.action} environment: ${del.stderr}`);
                     }
                 }
             }
             else if (config.action === CREATE || config.action === ENSURE) {
-                core.info(`Action is ${config.action}, attempting to create environment`);
+                core.info(`No existing environment found`);
+                core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
                 const create = yield exec.getExecOutput(az, [...envCmd, CREATE, ...envArgs, ...mutateArgs], {
                     ignoreReturnCode: true
                 });
@@ -140,7 +141,7 @@ function run() {
                     environment = JSON.parse(create.stdout);
                 }
                 else {
-                    throw Error(`Failed to create environment: ${create.stderr}`);
+                    throw Error(`Failed to ${config.action} environment: ${create.stderr}`);
                 }
             }
             else {
