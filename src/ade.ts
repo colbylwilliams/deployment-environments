@@ -223,7 +223,7 @@ async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
     const file = files.length > 0 ? files[0] : undefined;
 
     if (!file) {
-        core.info('No cofiguration file found, skipping');
+        core.info('No configuration file found, skipping');
         if (!isDefault) core.warning(`Could not find configuration file at path: ${pattern}`);
         return undefined;
     }
