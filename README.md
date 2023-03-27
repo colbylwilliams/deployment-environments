@@ -12,7 +12,7 @@ _For more information about workflows, see [Using workflows](https://docs.github
 
 Once you've configured your workflow, save it as a `.yml` file in your target Repository's `.github/workflows` directory.
 
-**See the usage examples at the bottom of this README.**
+**See the usage examples at the bottom of this README. Or for a complete example, see the [deployment-environments-sample](https://github.com/colbylwilliams/deployment-environments-sample) repo**
 
 ## Environment Name
 
@@ -71,7 +71,7 @@ By default, the action looks for a file named `ade.yml` at the root of the repos
 ```yaml
 # .github/workflows/create.yml
 
-- uses: colbylwilliams/deployment-environments@main
+- uses: colbylwilliams/deployment-environments@v1
   with:
     action: create
     config: /folder/my-app.yml
@@ -174,7 +174,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - uses: colbylwilliams/deployment-environments@main
+      - uses: colbylwilliams/deployment-environments@v1
         with:
           action: create
           parameters: '{ "name": "helloworld" }'
@@ -220,7 +220,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - uses: colbylwilliams/deployment-environments@main
+      - uses: colbylwilliams/deployment-environments@v1
         with:
           action: ensure
           parameters: '{ "name": "helloworld" }'
@@ -258,7 +258,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - uses: colbylwilliams/deployment-environments@main
+      - uses: colbylwilliams/deployment-environments@v1
         with:
           action: delete
 ```
@@ -294,7 +294,7 @@ jobs:
 
     steps:
       id: setup
-      uses: colbylwilliams/deployment-environments@main
+      uses: colbylwilliams/deployment-environments@v1
       with:
         action: setup
 
@@ -314,7 +314,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - uses: colbylwilliams/deployment-environments@main
+      - uses: colbylwilliams/deployment-environments@v1
         with:
           action: create
           parameters: '{ "name": "${{ needs.setup.outputs.name }}" }'
