@@ -27,7 +27,7 @@ You can override the default `prefix` and `suffix` by providing values as [input
 
 ## Environment Type
 
-The [environment type](https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#project-environment-types) is resolved from the branch or pull request. There are two different configurations depending on whether or not you use a `dev` branch, or create `feature` branches directly from `main`.
+The [environment type][environment-types] is resolved from the branch or pull request. There are two different configurations depending on whether or not you use a `dev` branch, or create `feature` branches directly from `main`.
 
 | branch/Pull request     | Environment Type |
 | ----------------------- | ---------------- |
@@ -94,12 +94,12 @@ The `action` input is required. It determines what action to take on the environ
 | Name                       | Description                                                                                                                                                                                                                                                                                   | Default                |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
 | `action`                   | Action to take on the environment. Can be setup, get, create, update, ensure, delete, or auto (see table above).                                                                                                                                                                              | `setup`                |
-| `tenant`                   | The Azure tenant ID (GUID).                                                                                                                                                                                                                                                                   |                        |
-| `subscription`             | The Azure subscription (GUID).                                                                                                                                                                                                                                                                |                        |
-| `devcenter`                | The DevCenter name.                                                                                                                                                                                                                                                                           |                        |
-| `project`                  | The Project name.                                                                                                                                                                                                                                                                             |                        |
-| `catalog`                  | The name of the Catalog.                                                                                                                                                                                                                                                                      |                        |
-| `catalog-item`             | The name of the Catalog Item.                                                                                                                                                                                                                                                                 |                        |
+| `tenant`                   | The Azure tenant ID (GUID). If not provided the action will try to resolve from the azure cli.                                                                                                                                                                                                |                        |
+| `subscription`             | The Azure subscription (GUID). If not provided the action will try to resolve from the azure cli.                                                                                                                                                                                             |                        |
+| `devcenter`                | The [Dev center][devcenter] name.                                                                                                                                                                                                                                                             |                        |
+| `project`                  | The [Project][project] name.                                                                                                                                                                                                                                                                  |                        |
+| `catalog`                  | The name of the [Catalog][catalog].                                                                                                                                                                                                                                                           |                        |
+| `catalog-item`             | The name of the [Catalog item][catalog-items].                                                                                                                                                                                                                                                |                        |
 | `prefix`                   | The prefix for the resolved environment name. If none is provided, environment names will start with ci.                                                                                                                                                                                      | `ci`                   |
 | `suffix`                   | The suffix for the resolved environment name. If none is provided, environment names will end with the repository numeric id.                                                                                                                                                                 | `github.repository_id` |
 | `main-branch`              | The name of the main branch. Defaults to main.                                                                                                                                                                                                                                                | `main`                 |
@@ -263,7 +263,7 @@ jobs:
 
 The `setup` action only resolves the environment name and type. It doesn't make any calls to Azure, and is normally used with another action (like `create`) later in the workflow.
 
-`setup` is useful when you want to map the project environment type to a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment). This allows you to use environment-type-specific identities to login and create/delete the deployment environments.
+`setup` is useful when you want to map the project environment type to a [GitHub environment][github-environments]. This allows you to use environment-type-specific identities to login and create/delete the deployment environments.
 
 This example extends the [`Create Environment`](#example-usage-create-environment) example above.
 
@@ -321,3 +321,11 @@ jobs:
 
           echo "- [View environment resources in the Azure portal]($ADE_PORTAL_URL)" >> $GITHUB_STEP_SUMMARY
 ```
+
+[devcenter]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#dev-centers
+[project]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#projects
+[environments]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#environments
+[catalog]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#catalog
+[catalog-items]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#catalog-items
+[environment-types]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#project-environment-types
+[github-environments]: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment
