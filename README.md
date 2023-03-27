@@ -27,13 +27,13 @@ You can override the default `prefix` and `suffix` by providing values as [input
 
 ## Environment Type
 
-The environment name is resolved from the branch or pull request. There are two different configurations depending on whether or not you use a `dev` branch, or create `feature` branches directly from `main`.
+The [environment type](https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#project-environment-types) is resolved from the branch or pull request. There are two different configurations depending on whether or not you use a `dev` branch, or create `feature` branches directly from `main`.
 
-| branch/Pull request         | Environment Type |
-| --------------------------- | ---------------- |
-| `feature` branches          | Dev              |
-| PRs `feature` -> `main` PRs | Test             |
-| `main` branch               | Prod             |
+| branch/Pull request     | Environment Type |
+| ----------------------- | ---------------- |
+| `feature` branches      | Dev              |
+| `feature` -> `main` PRs | Test             |
+| `main` branch           | Prod             |
 
 When you specify the name of a `dev` branch using the `dev-branch` input parameter, the action uses an additional `Staging` environment type.
 
@@ -63,8 +63,6 @@ prod-environment-name: my-prod-app
 ```
 
 By default, the action looks for a file named `ade.yml` at the root of the repository, but you can override the path/name with the `config` input.
-
-### Example
 
 ```yaml
 # .github/workflows/create.yml
