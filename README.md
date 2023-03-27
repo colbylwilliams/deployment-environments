@@ -4,7 +4,7 @@ This action dynamically creates an environment for each branch and pull request,
 
 ## Usage
 
-_See [action.yml](action.yml) for [metadata](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions) that defines the [inputs](#inputs), outputs, and runs configuration for this action._
+_See [action.yml](action.yml) for [metadata](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions) that defines the [inputs](#inputs), [outputs](#outputs), and runs configuration for this action._
 
 _For more information about workflows, see [Using workflows](https://docs.github.com/en/actions/using-workflows)._
 
