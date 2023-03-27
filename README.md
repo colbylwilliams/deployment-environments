@@ -48,6 +48,8 @@ When you specify the name of a `dev` branch using the `dev-branch` input paramet
 
 You can provide some of the required [inputs](#inputs) (like `devcenter`, `project`, etc.) in a YAML file in your repository.
 
+If an input is provided in the config file and directly within a workflow, the direct input will be used.
+
 ### Example
 
 ```yaml
