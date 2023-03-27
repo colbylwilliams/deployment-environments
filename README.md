@@ -12,7 +12,7 @@ _For more information about workflows, see [Using workflows](https://docs.github
 
 Once you've configured your workflow, save it as a `.yml` file in your target Repository's `.github/workflows` directory.
 
-**See the usage examples at the bottom of this README. Or for a complete example, see the [deployment-environments-sample](https://github.com/colbylwilliams/deployment-environments-sample) repo**
+**See the usage examples at the bottom of this README. For a complete example, see the [deployment-environments-sample](https://github.com/colbylwilliams/deployment-environments-sample) repo.**
 
 ## Environment Name
 
