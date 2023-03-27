@@ -2,6 +2,8 @@
 
 This action dynamically creates an environment for each branch and pull request, and deletes the environment when the branch is deleted or pull request is closed.
 
+Learn more about Azure Deployment Environments [here](https://learn.microsoft.com/en-us/azure/deployment-environments/overview-what-is-azure-deployment-environments).
+
 ## Usage
 
 _See [action.yml](action.yml) for [metadata](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions) that defines the [inputs](#inputs), [outputs](#outputs), and runs configuration for this action._
