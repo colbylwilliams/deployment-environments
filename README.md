@@ -29,18 +29,18 @@ The environment name is resolved from the branch or pull request. There are two 
 
 | branch/Pull request         | Environment Type |
 | --------------------------- | ---------------- |
-| `feature` branches          | `Dev`            |
-| PRs `feature` -> `main` PRs | `Test`           |
-| `main` branch               | `Prod`           |
+| `feature` branches          | Dev              |
+| PRs `feature` -> `main` PRs | Test             |
+| `main` branch               | Prod             |
 
 When you specify the name of a `dev` branch using the `dev-branch` input parameter, the action uses an additional `Staging` environment type.
 
 | branch/Pull request        | Environment Type |
 | -------------------------- | ---------------- |
-| `dev` & `feature` branches | `Dev`            |
-| PRs `feature` -> `dev` PRs | `Test`           |
-| PRs `dev` -> `main`        | `Staging`        |
-| `main` branch              | `Prod`           |
+| `dev` & `feature` branches | Dev              |
+| `feature` -> `dev` PRs     | Test             |
+| `dev` -> `main` PRs        | Staging          |
+| `main` branch              | Prod             |
 
 ## Config YAML
 
