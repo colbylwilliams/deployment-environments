@@ -234,6 +234,7 @@ function getConfigurationFile() {
         }
         core.info(`Found configuration file: ${file}`);
         const contents = yield fs.readFile(file, 'utf8');
+        core.info(contents);
         const config = yaml.load(contents);
         return config;
     });

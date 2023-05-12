@@ -12,6 +12,13 @@ export interface Environment {
     user: string;
 }
 
+export interface ResourceGroup {
+    id: string;
+    location: string;
+    name: string;
+    tags: object;
+}
+
 export interface Configuration {
     action: string;
     tenant: string;

@@ -222,6 +222,8 @@ async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
     core.info(`Found configuration file: ${file}`);
 
     const contents = await fs.readFile(file, 'utf8');
+    core.info(contents);
+
     const config = yaml.load(contents) as ConfigurationFile;
 
     return config;
