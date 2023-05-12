@@ -262,7 +262,7 @@ function getEnvironmentConfig(config) {
         setup.type = refName == config.mainBranch ? config.prodEnvironmentType : config.devEnvironmentType;
     }
     core.info(`Resolved environment type: ${setup.type}`);
-    if (config.prodEnvironmentName && config.environmentType == config.prodEnvironmentType) {
+    if (config.prodEnvironmentName && setup.type == config.prodEnvironmentType) {
         core.info(`Using prod environment name override: ${config.prodEnvironmentName}`);
         setup.name = config.prodEnvironmentName;
     }

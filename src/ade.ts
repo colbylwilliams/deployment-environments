@@ -258,7 +258,7 @@ function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
 
     core.info(`Resolved environment type: ${setup.type}`);
 
-    if (config.prodEnvironmentName && config.environmentType == config.prodEnvironmentType) {
+    if (config.prodEnvironmentName && setup.type == config.prodEnvironmentType) {
         core.info(`Using prod environment name override: ${config.prodEnvironmentName}`);
         setup.name = config.prodEnvironmentName;
     } else {
