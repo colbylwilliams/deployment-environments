@@ -16,10 +16,10 @@ const ENSURE = 'ensure';
 const DELETE = 'delete';
 const ACTIONS = [SETUP, GET, CREATE, UPDATE, ENSURE, DELETE];
 
-const PROD = 'prod';
-const STAGING = 'staging';
-const TEST = 'test';
-const DEV = 'dev';
+const PROD = 'Prod';
+const STAGING = 'Staging';
+const TEST = 'Test';
+const DEV = 'Dev';
 
 const MAIN_BRANCH = 'main';
 
