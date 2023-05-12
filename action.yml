@@ -27,15 +27,12 @@ inputs:
   prefix:
     description: 'The prefix for the resolved environment name. If none is provided, environment names will start with ci.'
     required: false
-    default: 'ci'
   suffix:
     description: 'The suffix for the resolved environment name. If none is provided, environment names will end with the repository numeric id.'
     required: false
-    default: ${{ github.repository_id }}
   main-branch:
     description: 'The name of the main branch. Defaults to main.'
     required: false
-    default: 'main'
   dev-branch:
     description: 'The name of the dev branch. If a value is provided, the action assums feature branches are created from the dev branch and the dev branch is merged into main for production deployments.'
     required: false
@@ -43,21 +40,17 @@ inputs:
     description: 'Override the name of the production environment. If not specified, it will be generated.'
     required: false
   prod-environment-type:
-    description: 'The name of the production environment type where the main branch will be deployed.'
+    description: 'The name of the production environment type where the main branch will be deployed. Defaults to Prod.'
     required: false
-    default: 'Prod'
   staging-environment-type:
-    description: 'The name of the staging environment type. If dev-branch is specified, pull requests from the dev branche to the main branch will create environments in this environment type.'
+    description: 'The name of the staging environment type. If dev-branch is specified, pull requests from the dev branche to the main branch will create environments in this environment type. Defaults to Staging.'
     required: false
-    default: 'Staging'
   test-environment-type:
-    description: 'The name of the testing environment type. If dev-branch is specified, pull requests from feature branches to the dev branch will create environments in this environment type. If feature branches are created from main, pull requests from feature branches to the main will use this type.'
+    description: 'The name of the testing environment type. If dev-branch is specified, pull requests from feature branches to the dev branch will create environments in this environment type. If feature branches are created from main, pull requests from feature branches to the main will use this type. Defaults to Test.'
     required: false
-    default: 'Test'
   dev-environment-type:
-    description: 'The name of the development environment type. Feature branches will create environments in this environment type.'
+    description: 'The name of the development environment type. Feature branches will create environments in this environment type. Defaults to Dev.'
     required: false
-    default: 'Dev'
   parameters:
     description: 'A JSON string containing parameters for the environment.'
     required: false
