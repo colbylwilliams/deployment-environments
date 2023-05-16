@@ -58,6 +58,9 @@ inputs:
     description: 'Path to a YAML configuration file.'
     required: false
     default: 'ade.yml'
+  devcenter-extension:
+    description: 'The url to a specific version of the Azure CLI DevCenter Extension.'
+    required: false
 outputs:
   tenant:
     description: 'The environment tenant (GUID).'

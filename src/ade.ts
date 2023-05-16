@@ -53,7 +53,14 @@ export async function run(): Promise<void> {
         }
 
         core.info('Installing Azure CLI DevCenter extension');
-        await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+
+        if (config.devCenterExtension) {
+            core.warning(`Using user-provided devcenter extension: ${config.devCenterExtension}`);
+            core.warning('This may cause unexpected behavior');
+            await exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
+        } else {
+            await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+        }
 
         const envArgs = [
             '--only-show-errors',
@@ -166,6 +173,9 @@ async function getConfiguration(az: string): Promise<Configuration> {
 
     config.devEnvironmentType =
         core.getInput('dev-environment-type', { required: false }) || file?.['dev-environment-type'] || DEV;
+
+    config.devCenterExtension =
+        core.getInput('devcenter-extension', { required: false }) || file?.['devcenter-extension'] || '';
 
     const setup = getEnvironmentConfig(config);
 

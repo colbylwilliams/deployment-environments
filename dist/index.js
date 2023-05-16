@@ -83,7 +83,14 @@ function run() {
                 return;
             }
             core.info('Installing Azure CLI DevCenter extension');
-            yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+            if (config.devCenterExtension) {
+                core.warning(`Using user-provided devcenter extension: ${config.devCenterExtension}`);
+                core.warning('This may cause unexpected behavior');
+                yield exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
+            }
+            else {
+                yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+            }
             const envArgs = [
                 '--only-show-errors',
                 '--dev-center',
@@ -186,6 +193,8 @@ function getConfiguration(az) {
             core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || TEST;
         config.devEnvironmentType =
             core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || DEV;
+        config.devCenterExtension =
+            core.getInput('devcenter-extension', { required: false }) || (file === null || file === void 0 ? void 0 : file['devcenter-extension']) || '';
         const setup = getEnvironmentConfig(config);
         config.environmentName = setup.name;
         config.environmentType = setup.type;
