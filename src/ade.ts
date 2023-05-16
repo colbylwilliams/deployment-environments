@@ -55,8 +55,9 @@ export async function run(): Promise<void> {
         core.info('Installing Azure CLI DevCenter extension');
 
         if (config.devCenterExtension) {
-            core.warning(`Using user-provided devcenter extension: ${config.devCenterExtension}`);
-            core.warning('This may cause unexpected behavior');
+            core.warning(
+                `Using user-provided devcenter extension. This may cause unexpected behavior. (${config.devCenterExtension})`
+            );
             await exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
         } else {
             await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);

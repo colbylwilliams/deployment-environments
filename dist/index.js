@@ -84,8 +84,7 @@ function run() {
             }
             core.info('Installing Azure CLI DevCenter extension');
             if (config.devCenterExtension) {
-                core.warning(`Using user-provided devcenter extension: ${config.devCenterExtension}`);
-                core.warning('This may cause unexpected behavior');
+                core.warning(`Using user-provided devcenter extension. This may cause unexpected behavior. (${config.devCenterExtension})`);
                 yield exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
             }
             else {
