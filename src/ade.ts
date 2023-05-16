@@ -53,7 +53,7 @@ export async function run(): Promise<void> {
         }
 
         core.info('Installing Azure CLI DevCenter extension');
-        await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+        await exec.exec(az, ['extension', 'add', '--source', 'https://github.com/tbyfield/azure-cli-extensions/raw/main/src/devcenter/azext_devcenter/versions/2023-04-01/devcenter-0.2.0-py3-none-any.whl']);
 
         const envArgs = [
             '--only-show-errors',
