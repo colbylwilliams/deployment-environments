@@ -62,6 +62,7 @@ const DEV = 'Dev';
 const MAIN_BRANCH = 'main';
 const PREFIX = 'ci';
 const DEFAULT_CONFIG_FILE = 'ade.yml';
+const PREVIEW_DEVCENTER_EXTENSION = 'https://github.com/tbyfield/azure-cli-extensions/raw/main/src/devcenter/azext_devcenter/versions/2023-04-01/devcenter-0.2.0-py3-none-any.whl';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const envCmd = ['devcenter', 'dev', 'environment'];
@@ -88,7 +89,8 @@ function run() {
                 yield exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
             }
             else {
-                yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+                yield exec.exec(az, ['extension', 'add', '--yes', '--source', PREVIEW_DEVCENTER_EXTENSION]);
+                // await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
             }
             const envArgs = [
                 '--only-show-errors',
@@ -104,8 +106,8 @@ function run() {
                 config.environmentType,
                 '--catalog-name',
                 config.catalog,
-                '--catalog-item-name',
-                config.catalogItem
+                '--environment-definition-name',
+                config.definition
             ];
             let exists = false;
             let created = false;
@@ -200,7 +202,7 @@ function getConfiguration(az) {
         config.devcenter = core.getInput('devcenter', { required: false }) || (file === null || file === void 0 ? void 0 : file.devcenter) || '';
         config.project = core.getInput('project', { required: false }) || (file === null || file === void 0 ? void 0 : file.project) || '';
         config.catalog = core.getInput('catalog', { required: false }) || (file === null || file === void 0 ? void 0 : file.catalog) || '';
-        config.catalogItem = core.getInput('catalog-item', { required: false }) || (file === null || file === void 0 ? void 0 : file['catalog-item']) || '';
+        config.definition = core.getInput('definition', { required: false }) || (file === null || file === void 0 ? void 0 : file['definition']) || '';
         config.parameters = core.getInput('parameters', { required: false }) || (file === null || file === void 0 ? void 0 : file.parameters) || '';
         config.tenant = core.getInput('tenant', { required: false }) || (file === null || file === void 0 ? void 0 : file.tenant) || '';
         config.subscription = core.getInput('subscription', { required: false }) || (file === null || file === void 0 ? void 0 : file.subscription) || '';
@@ -216,8 +218,8 @@ function getConfiguration(az) {
             if (config.action === CREATE || config.action === UPDATE || config.action === ENSURE) {
                 if (!config.catalog)
                     throw Error('Must provide a value for catalog as action input or in config file.');
-                if (!config.catalogItem)
-                    throw Error('Must provide a value for catalog-item as action input or in config file.');
+                if (!config.definition)
+                    throw Error('Must provide a value for definition as action input or in config file.');
             }
         }
         core.info('Configuration:');

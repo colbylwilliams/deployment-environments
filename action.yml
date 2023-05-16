@@ -21,8 +21,8 @@ inputs:
   catalog:
     description: 'The name of the Catalog.'
     required: false
-  catalog-item:
-    description: 'The name of the Catalog Item.'
+  definition:
+    description: 'The name of the Environment Definition.'
     required: false
   prefix:
     description: 'The prefix for the resolved environment name. If none is provided, environment names will start with ci.'

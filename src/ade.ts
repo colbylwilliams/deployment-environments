@@ -27,6 +27,9 @@ const PREFIX = 'ci';
 
 const DEFAULT_CONFIG_FILE = 'ade.yml';
 
+const PREVIEW_DEVCENTER_EXTENSION =
+    'https://github.com/tbyfield/azure-cli-extensions/raw/main/src/devcenter/azext_devcenter/versions/2023-04-01/devcenter-0.2.0-py3-none-any.whl';
+
 export async function run(): Promise<void> {
     const envCmd = ['devcenter', 'dev', 'environment'];
 
@@ -60,7 +63,8 @@ export async function run(): Promise<void> {
             );
             await exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
         } else {
-            await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
+            await exec.exec(az, ['extension', 'add', '--yes', '--source', PREVIEW_DEVCENTER_EXTENSION]);
+            // await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
         }
 
         const envArgs = [
@@ -78,8 +82,8 @@ export async function run(): Promise<void> {
             config.environmentType,
             '--catalog-name',
             config.catalog,
-            '--catalog-item-name',
-            config.catalogItem
+            '--environment-definition-name',
+            config.definition
         ];
 
         let exists = false;
@@ -186,7 +190,7 @@ async function getConfiguration(az: string): Promise<Configuration> {
     config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || '';
     config.project = core.getInput('project', { required: false }) || file?.project || '';
     config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || '';
-    config.catalogItem = core.getInput('catalog-item', { required: false }) || file?.['catalog-item'] || '';
+    config.definition = core.getInput('definition', { required: false }) || file?.['definition'] || '';
     config.parameters = core.getInput('parameters', { required: false }) || file?.parameters || '';
 
     config.tenant = core.getInput('tenant', { required: false }) || file?.tenant || '';
@@ -201,8 +205,8 @@ async function getConfiguration(az: string): Promise<Configuration> {
 
         if (config.action === CREATE || config.action === UPDATE || config.action === ENSURE) {
             if (!config.catalog) throw Error('Must provide a value for catalog as action input or in config file.');
-            if (!config.catalogItem)
-                throw Error('Must provide a value for catalog-item as action input or in config file.');
+            if (!config.definition)
+                throw Error('Must provide a value for definition as action input or in config file.');
         }
     }
 
