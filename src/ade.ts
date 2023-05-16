@@ -27,8 +27,7 @@ const PREFIX = 'ci';
 
 const DEFAULT_CONFIG_FILE = 'ade.yml';
 
-const PREVIEW_DEVCENTER_EXTENSION =
-    'https://github.com/tbyfield/azure-cli-extensions/raw/main/src/devcenter/azext_devcenter/versions/2023-04-01/devcenter-0.2.0-py3-none-any.whl';
+const PREVIEW_DEVCENTER_EXTENSION = 'https://aka.ms/devcenter/cli/devcenter-0.2.0-py3-none-any.whl';
 
 export async function run(): Promise<void> {
     const envCmd = ['devcenter', 'dev', 'environment'];
