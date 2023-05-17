@@ -455,13 +455,13 @@ function setOutputsAndVariables(
 
 function writeSummary(config: Configuration): void {
     core.info('Writing summary:');
-    core.summary.addHeading('## Azure Deployment Environment', 2);
+    core.summary.addHeading('Azure Deployment Environment', 2);
     core.summary.addList([
-        `- **Environment Tenant:** ${config.tenant}`,
-        `- **Environment DevCenter:** ${config.devcenter}`,
-        `- **Environment Project:** ${config.project}`,
-        `- **Environment Name:** ${config.environmentName}`,
-        `- **Environment Type:** ${config.environmentType}`
+        `<b>Environment Tenant:</b> ${config.tenant}`,
+        `<b>Environment DevCenter:</b> ${config.devcenter}`,
+        `<b>Environment Project:</b> ${config.project}`,
+        `<b>Environment Name:</b> ${config.environmentName}`,
+        `<b>Environment Type:</b> ${config.environmentType}`
     ]);
     core.summary.write();
 }
