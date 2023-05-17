@@ -254,28 +254,19 @@ async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
 function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
     const context = github.context;
 
-    core.info(`${JSON.stringify(context, null, 2)}`);
-
     const { eventName } = context;
 
     core.info('Getting environment config:');
-    core.info(`Event name: ${eventName}`);
-    core.info(`Ref: ${context.ref}`);
 
     if (eventName != 'push' && eventName != 'pull_request' && eventName != 'create' && eventName != 'delete')
         throw new Error(`Unsupported event type: ${eventName}`);
 
     const isPr: boolean = eventName == 'pull_request';
-    core.info(`Is PR: ${isPr}`);
-
     const refType: string = isPr ? 'pr' : 'branch';
-    core.info(`Ref type: ${refType}`);
 
     const refName: string = isPr
         ? context.payload.pull_request!.number.toString() // PR number
         : context.payload.ref.replace('refs/heads/', ''); // Branch name
-    core.info(`Ref name: ${refName}`);
-
     if (!refName) throw new Error(`Failed to get branch name or pr number from context`);
 
     const setup: EnvironmentConfig = {} as EnvironmentConfig;
