@@ -64,6 +64,7 @@ inputs:
   summary:
     description: 'If set to true, the action will output a summary of the environment.'
     required: false
+    default: 'false'
 outputs:
   tenant:
     description: 'The environment tenant (GUID).'
