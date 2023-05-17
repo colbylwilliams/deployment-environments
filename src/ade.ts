@@ -273,7 +273,7 @@ function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
 
     const refName: string = isPr
         ? context.payload.pull_request!.number.toString() // PR number
-        : context.ref.replace('refs/heads/', ''); // Branch name
+        : context.payload.ref.replace('refs/heads/', ''); // Branch name
     core.info(`Ref name: ${refName}`);
 
     if (!refName) throw new Error(`Failed to get branch name or pr number from context`);
