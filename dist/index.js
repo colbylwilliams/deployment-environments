@@ -417,7 +417,7 @@ function writeSummary(config) {
         `- **Environment DevCenter:** ${config.devcenter}`,
         `- **Environment Project:** ${config.project}`,
         `- **Environment Name:** ${config.environmentName}`,
-        `- **Environment Type:** ${config.environmentType}`,
+        `- **Environment Type:** ${config.environmentType}`
     ]);
     core.summary.write();
 }
