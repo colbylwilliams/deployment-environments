@@ -111,7 +111,9 @@ export async function run(): Promise<void> {
                 }
             } else if (config.action === DELETE) {
                 core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                const del = await exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs], { ignoreReturnCode: true });
+                const del = await exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs, '--yes'], {
+                    ignoreReturnCode: true
+                });
                 if (del.exitCode === 0) {
                     core.info('Deleted environment');
                     // environment = undefined;
@@ -252,17 +254,28 @@ async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
 function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
     const context = github.context;
 
+    core.info(`${JSON.stringify(context, null, 2)}`);
+
     const { eventName } = context;
+
+    core.info('Getting environment config:');
+    core.info(`Event name: ${eventName}`);
+    core.info(`Ref: ${context.ref}`);
 
     if (eventName != 'push' && eventName != 'pull_request' && eventName != 'create' && eventName != 'delete')
         throw new Error(`Unsupported event type: ${eventName}`);
 
     const isPr: boolean = eventName == 'pull_request';
+    core.info(`Is PR: ${isPr}`);
+
     const refType: string = isPr ? 'pr' : 'branch';
+    core.info(`Ref type: ${refType}`);
 
     const refName: string = isPr
         ? context.payload.pull_request!.number.toString() // PR number
         : context.ref.replace('refs/heads/', ''); // Branch name
+    core.info(`Ref name: ${refName}`);
+
     if (!refName) throw new Error(`Failed to get branch name or pr number from context`);
 
     const setup: EnvironmentConfig = {} as EnvironmentConfig;
