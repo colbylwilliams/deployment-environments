@@ -163,6 +163,9 @@ function run() {
                 core.info(`No existing environment found: code: ${show.exitCode}`);
             }
             setOutputsAndVariables(config, environment, exists, created);
+            if (config.summary) {
+                writeSummary(config);
+            }
         }
         catch (error) {
             if (error instanceof Error)
@@ -196,6 +199,7 @@ function getConfiguration(az) {
             core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || DEV;
         config.devCenterExtension =
             core.getInput('devcenter-extension', { required: false }) || (file === null || file === void 0 ? void 0 : file['devcenter-extension']) || '';
+        config.summary = core.getBooleanInput('summary', { required: false }) || (file === null || file === void 0 ? void 0 : file.summary) || false;
         const setup = getEnvironmentConfig(config);
         config.environmentName = setup.name;
         config.environmentType = setup.type;
@@ -404,6 +408,18 @@ function setOutputsAndVariables(config, environment, exists, created) {
     core.exportVariable('ADE_EXISTS', exists.toString());
     core.info(`  ADE_CREATED: ${created}`);
     core.exportVariable('ADE_CREATED', created.toString());
+}
+function writeSummary(config) {
+    core.info('Writing summary:');
+    core.summary.addHeading('## Azure Deployment Environment', 2);
+    core.summary.addList([
+        `- **Environment Tenant:** ${config.tenant}`,
+        `- **Environment DevCenter:** ${config.devcenter}`,
+        `- **Environment Project:** ${config.project}`,
+        `- **Environment Name:** ${config.environmentName}`,
+        `- **Environment Type:** ${config.environmentType}`,
+    ]);
+    core.summary.write();
 }
 
 

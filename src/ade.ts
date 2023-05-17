@@ -140,6 +140,10 @@ export async function run(): Promise<void> {
         }
 
         setOutputsAndVariables(config, environment, exists, created);
+
+        if (config.summary) {
+            writeSummary(config);
+        }
     } catch (error) {
         if (error instanceof Error) core.setFailed(error.message);
     }
@@ -180,6 +184,8 @@ async function getConfiguration(az: string): Promise<Configuration> {
 
     config.devCenterExtension =
         core.getInput('devcenter-extension', { required: false }) || file?.['devcenter-extension'] || '';
+
+    config.summary = core.getBooleanInput('summary', { required: false }) || file?.summary || false;
 
     const setup = getEnvironmentConfig(config);
 
@@ -445,4 +451,17 @@ function setOutputsAndVariables(
 
     core.info(`  ADE_CREATED: ${created}`);
     core.exportVariable('ADE_CREATED', created.toString());
+}
+
+function writeSummary(config: Configuration): void {
+    core.info('Writing summary:');
+    core.summary.addHeading('## Azure Deployment Environment', 2);
+    core.summary.addList([
+        `- **Environment Tenant:** ${config.tenant}`,
+        `- **Environment DevCenter:** ${config.devcenter}`,
+        `- **Environment Project:** ${config.project}`,
+        `- **Environment Name:** ${config.environmentName}`,
+        `- **Environment Type:** ${config.environmentType}`
+    ]);
+    core.summary.write();
 }
