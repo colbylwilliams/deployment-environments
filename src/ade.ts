@@ -27,8 +27,6 @@ const PREFIX = 'ci';
 
 const DEFAULT_CONFIG_FILE = 'ade.yml';
 
-const PREVIEW_DEVCENTER_EXTENSION = 'https://aka.ms/devcenter/cli/devcenter-0.2.0-py3-none-any.whl';
-
 export async function run(): Promise<void> {
     const envCmd = ['devcenter', 'dev', 'environment'];
 
@@ -55,16 +53,7 @@ export async function run(): Promise<void> {
         }
 
         core.info('Installing Azure CLI DevCenter extension');
-
-        if (config.devCenterExtension) {
-            core.warning(
-                `Using user-provided devcenter extension. This may cause unexpected behavior. (${config.devCenterExtension})`
-            );
-            await exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
-        } else {
-            await exec.exec(az, ['extension', 'add', '--yes', '--source', PREVIEW_DEVCENTER_EXTENSION]);
-            // await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
-        }
+        await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade', '--yes']);
 
         const envArgs = [
             '--only-show-errors',
@@ -183,9 +172,6 @@ async function getConfiguration(az: string): Promise<Configuration> {
 
     config.devEnvironmentType =
         core.getInput('dev-environment-type', { required: false }) || file?.['dev-environment-type'] || DEV;
-
-    config.devCenterExtension =
-        core.getInput('devcenter-extension', { required: false }) || file?.['devcenter-extension'] || '';
 
     config.summary = core.getBooleanInput('summary', { required: false }) || file?.summary || false;
 

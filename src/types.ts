@@ -37,7 +37,6 @@ export interface Configuration {
     create: boolean;
     environmentName: string;
     environmentType: string;
-    devCenterExtension: string;
     summary: boolean;
 }
 
@@ -58,7 +57,6 @@ export interface ConfigurationFile {
     'staging-environment-type'?: string;
     'test-environment-type'?: string;
     'dev-environment-type'?: string;
-    'devcenter-extension'?: string;
     summary?: boolean;
 }
 

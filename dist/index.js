@@ -62,7 +62,6 @@ const DEV = 'Dev';
 const MAIN_BRANCH = 'main';
 const PREFIX = 'ci';
 const DEFAULT_CONFIG_FILE = 'ade.yml';
-const PREVIEW_DEVCENTER_EXTENSION = 'https://aka.ms/devcenter/cli/devcenter-0.2.0-py3-none-any.whl';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const envCmd = ['devcenter', 'dev', 'environment'];
@@ -84,14 +83,7 @@ function run() {
                 return;
             }
             core.info('Installing Azure CLI DevCenter extension');
-            if (config.devCenterExtension) {
-                core.warning(`Using user-provided devcenter extension. This may cause unexpected behavior. (${config.devCenterExtension})`);
-                yield exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
-            }
-            else {
-                yield exec.exec(az, ['extension', 'add', '--yes', '--source', PREVIEW_DEVCENTER_EXTENSION]);
-                // await exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
-            }
+            yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade', '--yes']);
             const envArgs = [
                 '--only-show-errors',
                 '--dev-center',
@@ -199,8 +191,6 @@ function getConfiguration(az) {
             core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || TEST;
         config.devEnvironmentType =
             core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || DEV;
-        config.devCenterExtension =
-            core.getInput('devcenter-extension', { required: false }) || (file === null || file === void 0 ? void 0 : file['devcenter-extension']) || '';
         config.summary = core.getBooleanInput('summary', { required: false }) || (file === null || file === void 0 ? void 0 : file.summary) || false;
         const setup = getEnvironmentConfig(config);
         config.environmentName = setup.name;
