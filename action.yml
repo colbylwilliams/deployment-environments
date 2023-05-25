@@ -21,8 +21,8 @@ inputs:
   catalog:
     description: 'The name of the Catalog.'
     required: false
-  catalog-item:
-    description: 'The name of the Catalog Item.'
+  definition:
+    description: 'The name of the Environment Definition.'
     required: false
   prefix:
     description: 'The prefix for the resolved environment name. If none is provided, environment names will start with ci.'
@@ -58,9 +58,10 @@ inputs:
     description: 'Path to a YAML configuration file.'
     required: false
     default: 'ade.yml'
-  devcenter-extension:
-    description: 'The url to a specific version of the Azure CLI DevCenter Extension.'
+  summary:
+    description: 'If set to true, the action will output a summary of the environment.'
     required: false
+    default: 'false'
 outputs:
   tenant:
     description: 'The environment tenant (GUID).'

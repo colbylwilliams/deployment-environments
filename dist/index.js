@@ -83,13 +83,7 @@ function run() {
                 return;
             }
             core.info('Installing Azure CLI DevCenter extension');
-            if (config.devCenterExtension) {
-                core.warning(`Using user-provided devcenter extension. This may cause unexpected behavior. (${config.devCenterExtension})`);
-                yield exec.exec(az, ['extension', 'add', '--yes', '--source', config.devCenterExtension]);
-            }
-            else {
-                yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade']);
-            }
+            yield exec.exec(az, ['extension', 'add', '--name', 'devcenter', '--upgrade', '--yes']);
             const envArgs = [
                 '--only-show-errors',
                 '--dev-center',
@@ -104,8 +98,8 @@ function run() {
                 config.environmentType,
                 '--catalog-name',
                 config.catalog,
-                '--catalog-item-name',
-                config.catalogItem
+                '--environment-definition-name',
+                config.definition
             ];
             let exists = false;
             let created = false;
@@ -132,7 +126,9 @@ function run() {
                 }
                 else if (config.action === DELETE) {
                     core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                    const del = yield exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs], { ignoreReturnCode: true });
+                    const del = yield exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs, '--yes'], {
+                        ignoreReturnCode: true
+                    });
                     if (del.exitCode === 0) {
                         core.info('Deleted environment');
                         // environment = undefined;
@@ -161,6 +157,9 @@ function run() {
                 core.info(`No existing environment found: code: ${show.exitCode}`);
             }
             setOutputsAndVariables(config, environment, exists, created);
+            if (config.summary) {
+                writeSummary(config);
+            }
         }
         catch (error) {
             if (error instanceof Error)
@@ -192,15 +191,14 @@ function getConfiguration(az) {
             core.getInput('test-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['test-environment-type']) || TEST;
         config.devEnvironmentType =
             core.getInput('dev-environment-type', { required: false }) || (file === null || file === void 0 ? void 0 : file['dev-environment-type']) || DEV;
-        config.devCenterExtension =
-            core.getInput('devcenter-extension', { required: false }) || (file === null || file === void 0 ? void 0 : file['devcenter-extension']) || '';
+        config.summary = core.getBooleanInput('summary', { required: false }) || (file === null || file === void 0 ? void 0 : file.summary) || false;
         const setup = getEnvironmentConfig(config);
         config.environmentName = setup.name;
         config.environmentType = setup.type;
         config.devcenter = core.getInput('devcenter', { required: false }) || (file === null || file === void 0 ? void 0 : file.devcenter) || '';
         config.project = core.getInput('project', { required: false }) || (file === null || file === void 0 ? void 0 : file.project) || '';
         config.catalog = core.getInput('catalog', { required: false }) || (file === null || file === void 0 ? void 0 : file.catalog) || '';
-        config.catalogItem = core.getInput('catalog-item', { required: false }) || (file === null || file === void 0 ? void 0 : file['catalog-item']) || '';
+        config.definition = core.getInput('definition', { required: false }) || (file === null || file === void 0 ? void 0 : file['definition']) || '';
         config.parameters = core.getInput('parameters', { required: false }) || (file === null || file === void 0 ? void 0 : file.parameters) || '';
         config.tenant = core.getInput('tenant', { required: false }) || (file === null || file === void 0 ? void 0 : file.tenant) || '';
         config.subscription = core.getInput('subscription', { required: false }) || (file === null || file === void 0 ? void 0 : file.subscription) || '';
@@ -216,8 +214,8 @@ function getConfiguration(az) {
             if (config.action === CREATE || config.action === UPDATE || config.action === ENSURE) {
                 if (!config.catalog)
                     throw Error('Must provide a value for catalog as action input or in config file.');
-                if (!config.catalogItem)
-                    throw Error('Must provide a value for catalog-item as action input or in config file.');
+                if (!config.definition)
+                    throw Error('Must provide a value for definition as action input or in config file.');
             }
         }
         core.info('Configuration:');
@@ -250,13 +248,14 @@ function getConfigurationFile() {
 function getEnvironmentConfig(config) {
     const context = github.context;
     const { eventName } = context;
+    core.info('Getting environment config:');
     if (eventName != 'push' && eventName != 'pull_request' && eventName != 'create' && eventName != 'delete')
         throw new Error(`Unsupported event type: ${eventName}`);
     const isPr = eventName == 'pull_request';
     const refType = isPr ? 'pr' : 'branch';
     const refName = isPr
         ? context.payload.pull_request.number.toString() // PR number
-        : context.ref.replace('refs/heads/', ''); // Branch name
+        : context.payload.ref.replace('refs/heads/', ''); // Branch name
     if (!refName)
         throw new Error(`Failed to get branch name or pr number from context`);
     const setup = {};
@@ -402,6 +401,18 @@ function setOutputsAndVariables(config, environment, exists, created) {
     core.exportVariable('ADE_EXISTS', exists.toString());
     core.info(`  ADE_CREATED: ${created}`);
     core.exportVariable('ADE_CREATED', created.toString());
+}
+function writeSummary(config) {
+    core.info('Writing summary:');
+    core.summary.addHeading('Azure Deployment Environment', 2);
+    core.summary.addList([
+        `<b>Environment Tenant:</b> ${config.tenant}`,
+        `<b>Environment DevCenter:</b> ${config.devcenter}`,
+        `<b>Environment Project:</b> ${config.project}`,
+        `<b>Environment Name:</b> ${config.environmentName}`,
+        `<b>Environment Type:</b> ${config.environmentType}`
+    ]);
+    core.summary.write();
 }
 
 

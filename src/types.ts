@@ -1,14 +1,11 @@
 export interface Environment {
-    catalogItemName: string;
     catalogName: string;
-    description?: string;
+    environmentDefinitionName: string;
     environmentType: string;
     name: string;
     parameters: object;
     provisioningState: string;
     resourceGroupId: string;
-    scheduledTasks: object;
-    tags: object;
     user: string;
 }
 
@@ -26,7 +23,7 @@ export interface Configuration {
     devcenter: string;
     project: string;
     catalog: string;
-    catalogItem: string;
+    definition: string;
     parameters: string;
     prefix: string;
     suffix: string;
@@ -40,7 +37,7 @@ export interface Configuration {
     create: boolean;
     environmentName: string;
     environmentType: string;
-    devCenterExtension: string;
+    summary: boolean;
 }
 
 export interface ConfigurationFile {
@@ -49,7 +46,7 @@ export interface ConfigurationFile {
     devcenter?: string;
     project?: string;
     catalog?: string;
-    'catalog-item'?: string;
+    definition?: string;
     parameters: string;
     prefix?: string;
     suffix?: string;
@@ -60,7 +57,7 @@ export interface ConfigurationFile {
     'staging-environment-type'?: string;
     'test-environment-type'?: string;
     'dev-environment-type'?: string;
-    'devcenter-extension'?: string;
+    summary?: boolean;
 }
 
 export interface EnvironmentConfig {

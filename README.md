@@ -62,7 +62,7 @@ suffix: 22887658
 devcenter: MyDevCenter123
 project: MyProject123
 catalog: Environments
-catalog-item: FunctionApp
+definition: FunctionApp
 prod-environment-name: my-prod-app
 ```
 
@@ -103,7 +103,7 @@ Inputs in **bold** are required for all [`action`s](#action-input) except `setup
 | **`devcenter`**            | The [Dev center][devcenter] name.                                                                                                                                                                                                                                                               |                        |
 | **`project`**              | The [Project][project] name.                                                                                                                                                                                                                                                                    |                        |
 | **`catalog`**              | The name of the [Catalog][catalog].                                                                                                                                                                                                                                                             |                        |
-| **`catalog-item`**         | The name of the [Catalog item][catalog-items].                                                                                                                                                                                                                                                  |                        |
+| **`definition`**           | The name of the [Environment Definition][environment-definitions].                                                                                                                                                                                                                              |                        |
 | `prefix`                   | The prefix for the resolved environment name. If none is provided, environment names will start with ci.                                                                                                                                                                                        | `ci`                   |
 | `suffix`                   | The suffix for the resolved environment name. If none is provided, environment names will end with the repository numeric id.                                                                                                                                                                   | `github.repository_id` |
 | `main-branch`              | The name of the main branch. Defaults to main.                                                                                                                                                                                                                                                  | `main`                 |
@@ -115,6 +115,7 @@ Inputs in **bold** are required for all [`action`s](#action-input) except `setup
 | `dev-environment-type`     | The name of the development environment type. Feature branches will create environments in this environment type.                                                                                                                                                                               | `Dev`                  |
 | `parameters`               | A JSON string containing parameters for the environment.                                                                                                                                                                                                                                        |                        |
 | `config`                   | Path to a YAML [configuration file](#config-yaml).                                                                                                                                                                                                                                              | `ade.yml`              |
+| `summary`                  | If set to `true`, the action will output a [job summary][github-summary] with information about the environment.                                                                                                                                                                                | `false`                |
 
 ## Outputs
 
@@ -330,6 +331,7 @@ jobs:
 [project]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#projects
 [environments]: https://learn.microsoft.com/en-us/azure/deployment-environments/overview-what-is-azure-deployment-environments
 [catalog]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#catalog
-[catalog-items]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#catalog-items
+[environment-definitions]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#catalog-items
 [environment-types]: https://learn.microsoft.com/en-us/azure/deployment-environments/concept-environments-key-concepts#project-environment-types
 [github-environments]: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment
+[github-summary]: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary
