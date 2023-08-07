@@ -247,7 +247,9 @@ on:
   pull_request:
     types: [closed]
 
-concurrency: ${{ github.event.number || github.ref_name }}
+concurrency:
+  group: ${{ github.event.number || github.event.ref }}
+  cancel-in-progress: true
 
 jobs:
   delete:
