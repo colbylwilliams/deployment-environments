@@ -49,6 +49,12 @@ export async function run(): Promise<void> {
             core.info(`  ADE_TYPE: ${config.environmentType}`);
             core.exportVariable('ADE_TYPE', config.environmentType);
 
+            // azd
+            core.info(`  AZURE_ENV_NAME: ${config.environmentName}`);
+            core.exportVariable('AZURE_ENV_NAME', config.environmentName);
+            core.info(`  AZURE_DEVCENTER_ENVIRONMENT_TYPE: ${config.environmentType}`);
+            core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_TYPE', config.environmentType);
+
             return;
         }
 

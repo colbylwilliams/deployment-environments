@@ -80,6 +80,11 @@ function run() {
                 core.exportVariable('ADE_NAME', config.environmentName);
                 core.info(`  ADE_TYPE: ${config.environmentType}`);
                 core.exportVariable('ADE_TYPE', config.environmentType);
+                // azd
+                core.info(`  AZURE_ENV_NAME: ${config.environmentName}`);
+                core.exportVariable('AZURE_ENV_NAME', config.environmentName);
+                core.info(`  AZURE_DEVCENTER_ENVIRONMENT_TYPE: ${config.environmentType}`);
+                core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_TYPE', config.environmentType);
                 return;
             }
             core.info('Installing Azure CLI DevCenter extension');
