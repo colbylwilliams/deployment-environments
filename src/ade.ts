@@ -89,7 +89,7 @@ export async function run(): Promise<void> {
 
             if (config.action === UPDATE) {
                 core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                const update = await exec.getExecOutput(az, [...envCmd, UPDATE, ...envArgs, ...mutateArgs], {
+                const update = await exec.getExecOutput(az, [...envCmd, UPDATE, ...mutateArgs], {
                     ignoreReturnCode: true
                 });
                 if (update.exitCode === 0) {
@@ -100,7 +100,7 @@ export async function run(): Promise<void> {
                 }
             } else if (config.action === DELETE) {
                 core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                const del = await exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs, '--yes'], {
+                const del = await exec.getExecOutput(az, [...envCmd, DELETE, '--yes'], {
                     ignoreReturnCode: true
                 });
                 if (del.exitCode === 0) {
