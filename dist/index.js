@@ -106,6 +106,7 @@ function run() {
                 '--environment-definition-name',
                 config.definition
             ];
+            const paramArgs = ['--parameters', config.parameters];
             let exists = false;
             let created = false;
             let environment;
@@ -118,7 +119,7 @@ function run() {
                 environment = JSON.parse(show.stdout);
                 if (config.action === UPDATE) {
                     core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                    const update = yield exec.getExecOutput(az, [...envCmd, UPDATE, ...mutateArgs], {
+                    const update = yield exec.getExecOutput(az, [...envCmd, UPDATE, ...envArgs, ...paramArgs], {
                         ignoreReturnCode: true
                     });
                     if (update.exitCode === 0) {
@@ -131,7 +132,7 @@ function run() {
                 }
                 else if (config.action === DELETE) {
                     core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                    const del = yield exec.getExecOutput(az, [...envCmd, DELETE, '--yes'], {
+                    const del = yield exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs, '--yes'], {
                         ignoreReturnCode: true
                     });
                     if (del.exitCode === 0) {
@@ -406,6 +407,21 @@ function setOutputsAndVariables(config, environment, exists, created) {
     core.exportVariable('ADE_EXISTS', exists.toString());
     core.info(`  ADE_CREATED: ${created}`);
     core.exportVariable('ADE_CREATED', created.toString());
+    // azd
+    // core.info(`  AZURE_ENV_NAME: ${config.environmentName}`);
+    // core.exportVariable('AZURE_ENV_NAME', config.environmentName);
+    // core.info(`  AZURE_DEVCENTER_NAME: ${config.devcenter}`);
+    // core.exportVariable('AZURE_DEVCENTER_NAME', config.devcenter);
+    // core.info(`  AZURE_DEVCENTER_PROJECT: ${config.project}`);
+    // core.exportVariable('AZURE_DEVCENTER_PROJECT', config.project);
+    // core.info(`  AZURE_DEVCENTER_CATALOG: ${config.catalog}`);
+    // core.exportVariable('AZURE_DEVCENTER_CATALOG', config.catalog);
+    // core.info(`  AZURE_DEVCENTER_ENVIRONMENT_DEFINITION: ${config.definition}`);
+    // core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_DEFINITION', config.definition);
+    core.info(`  AZURE_DEVCENTER_ENVIRONMENT_TYPE: ${config.environmentType}`);
+    core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_TYPE', config.environmentType);
+    // core.info(`  AZURE_DEVCENTER_ENVIRONMENT_USER: ${}`)
+    // core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_USER', '');
 }
 function writeSummary(config) {
     core.info('Writing summary:');

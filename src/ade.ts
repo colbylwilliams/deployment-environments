@@ -80,6 +80,8 @@ export async function run(): Promise<void> {
             config.definition
         ];
 
+        const paramArgs = ['--parameters', config.parameters];
+
         let exists = false;
         let created = false;
         let environment: Environment | undefined;
@@ -95,7 +97,7 @@ export async function run(): Promise<void> {
 
             if (config.action === UPDATE) {
                 core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                const update = await exec.getExecOutput(az, [...envCmd, UPDATE, ...mutateArgs], {
+                const update = await exec.getExecOutput(az, [...envCmd, UPDATE, ...envArgs, ...paramArgs], {
                     ignoreReturnCode: true
                 });
                 if (update.exitCode === 0) {
@@ -106,7 +108,7 @@ export async function run(): Promise<void> {
                 }
             } else if (config.action === DELETE) {
                 core.info(`Action is ${config.action}, attempting to ${config.action} environment`);
-                const del = await exec.getExecOutput(az, [...envCmd, DELETE, '--yes'], {
+                const del = await exec.getExecOutput(az, [...envCmd, DELETE, ...envArgs, '--yes'], {
                     ignoreReturnCode: true
                 });
                 if (del.exitCode === 0) {
@@ -447,6 +449,28 @@ function setOutputsAndVariables(
 
     core.info(`  ADE_CREATED: ${created}`);
     core.exportVariable('ADE_CREATED', created.toString());
+
+    // azd
+    // core.info(`  AZURE_ENV_NAME: ${config.environmentName}`);
+    // core.exportVariable('AZURE_ENV_NAME', config.environmentName);
+
+    // core.info(`  AZURE_DEVCENTER_NAME: ${config.devcenter}`);
+    // core.exportVariable('AZURE_DEVCENTER_NAME', config.devcenter);
+
+    // core.info(`  AZURE_DEVCENTER_PROJECT: ${config.project}`);
+    // core.exportVariable('AZURE_DEVCENTER_PROJECT', config.project);
+
+    // core.info(`  AZURE_DEVCENTER_CATALOG: ${config.catalog}`);
+    // core.exportVariable('AZURE_DEVCENTER_CATALOG', config.catalog);
+
+    // core.info(`  AZURE_DEVCENTER_ENVIRONMENT_DEFINITION: ${config.definition}`);
+    // core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_DEFINITION', config.definition);
+
+    core.info(`  AZURE_DEVCENTER_ENVIRONMENT_TYPE: ${config.environmentType}`);
+    core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_TYPE', config.environmentType);
+
+    // core.info(`  AZURE_DEVCENTER_ENVIRONMENT_USER: ${}`)
+    // core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_USER', '');
 }
 
 function writeSummary(config: Configuration): void {
