@@ -5,7 +5,14 @@ import * as glob from '@actions/glob';
 import * as io from '@actions/io';
 import * as fs from 'fs/promises';
 import * as yaml from 'js-yaml';
-import { Configuration, ConfigurationFile, Environment, EnvironmentConfig } from './types';
+import {
+    AZDConfiguration,
+    Configuration,
+    ConfigurationFile,
+    Environment,
+    EnvironmentConfig,
+    ResourceGroup
+} from './types';
 
 const AUTO = 'auto';
 const SETUP = 'setup';
@@ -25,6 +32,7 @@ const MAIN_BRANCH = 'main';
 
 const PREFIX = 'ci';
 
+const ASD_CONFIG_FILE = 'azure.yaml';
 const DEFAULT_CONFIG_FILE = 'ade.yml';
 
 export async function run(): Promise<void> {
@@ -37,24 +45,7 @@ export async function run(): Promise<void> {
         const config = await getConfiguration(az);
 
         if (config.action === SETUP) {
-            core.info('Setting outputs:');
-            core.info(`  name: ${config.environmentName}`);
-            core.setOutput('name', config.environmentName);
-            core.info(`  type: ${config.environmentType}`);
-            core.setOutput('type', config.environmentType);
-
-            core.info('Setting environment variables:');
-            core.info(`  ADE_NAME: ${config.environmentName}`);
-            core.exportVariable('ADE_NAME', config.environmentName);
-            core.info(`  ADE_TYPE: ${config.environmentType}`);
-            core.exportVariable('ADE_TYPE', config.environmentType);
-
-            // azd
-            core.info(`  AZURE_ENV_NAME: ${config.environmentName}`);
-            core.exportVariable('AZURE_ENV_NAME', config.environmentName);
-            core.info(`  AZURE_DEVCENTER_ENVIRONMENT_TYPE: ${config.environmentType}`);
-            core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_TYPE', config.environmentType);
-
+            setOutputsAndVariables(config, undefined, false, false);
             return;
         }
 
@@ -159,6 +150,32 @@ async function getConfiguration(az: string): Promise<Configuration> {
 
     const file = await getConfigurationFile();
 
+    const azd = core.getBooleanInput('azd', { required: false }) || file?.azd || false;
+    config.azd = azd;
+    const azdConfig = azd ? (await getAZDConfigurationFile())?.platform?.config : undefined;
+
+    if (file && azdConfig) {
+        core.info(
+            `Found both ADE and azd configuration files. Note that ${file.fileName} will override the values in ${ASD_CONFIG_FILE}`
+        );
+        if (file.devcenter && azdConfig.name && file.devcenter !== azdConfig.name)
+            core.warning(
+                `Found 'devcenter' in both ${file.fileName} and ${ASD_CONFIG_FILE}, using value from ${file.fileName} (${file.devcenter})`
+            );
+        if (file.project && azdConfig.project && file.project !== azdConfig.project)
+            core.warning(
+                `Found 'project' in both ${file.fileName} and ${ASD_CONFIG_FILE}, using value from ${file.fileName} (${file.project})`
+            );
+        if (file.catalog && azdConfig.catalog && file.catalog !== azdConfig.catalog)
+            core.warning(
+                `Found 'catalog' in both ${file.fileName} and ${ASD_CONFIG_FILE}, using value from ${file.fileName} (${file.catalog})`
+            );
+        if (file.definition && azdConfig.environmentDefinition && file.definition !== azdConfig.environmentDefinition)
+            core.warning(
+                `Found 'definition' in both ${file.fileName} and ${ASD_CONFIG_FILE}, using value from ${file.fileName} (${file.definition})`
+            );
+    }
+
     config.prefix = core.getInput('prefix', { required: false }) || file?.prefix || PREFIX;
     config.suffix =
         core.getInput('suffix', { required: false }) || file?.suffix || process.env['GITHUB_REPOSITORY_ID']!;
@@ -168,30 +185,27 @@ async function getConfiguration(az: string): Promise<Configuration> {
 
     config.prodEnvironmentName =
         core.getInput('prod-environment-name', { required: false }) || file?.['prod-environment-name'] || '';
-
     config.prodEnvironmentType =
         core.getInput('prod-environment-type', { required: false }) || file?.['prod-environment-type'] || PROD;
-
     config.stagingEnvironmentType =
         core.getInput('staging-environment-type', { required: false }) || file?.['staging-environment-type'] || STAGING;
-
     config.testEnvironmentType =
         core.getInput('test-environment-type', { required: false }) || file?.['test-environment-type'] || TEST;
-
     config.devEnvironmentType =
         core.getInput('dev-environment-type', { required: false }) || file?.['dev-environment-type'] || DEV;
 
     config.summary = core.getBooleanInput('summary', { required: false }) || file?.summary || false;
 
-    const setup = getEnvironmentConfig(config);
+    const setup = getEnvironmentSetup(config);
 
     config.environmentName = setup.name;
     config.environmentType = setup.type;
 
-    config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || '';
-    config.project = core.getInput('project', { required: false }) || file?.project || '';
-    config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || '';
-    config.definition = core.getInput('definition', { required: false }) || file?.['definition'] || '';
+    config.devcenter = core.getInput('devcenter', { required: false }) || file?.devcenter || azdConfig?.name || '';
+    config.project = core.getInput('project', { required: false }) || file?.project || azdConfig?.project || '';
+    config.catalog = core.getInput('catalog', { required: false }) || file?.catalog || azdConfig?.catalog || '';
+    config.definition =
+        core.getInput('definition', { required: false }) || file?.definition || azdConfig?.environmentDefinition || '';
     config.parameters = core.getInput('parameters', { required: false }) || file?.parameters || '';
 
     config.tenant = core.getInput('tenant', { required: false }) || file?.tenant || '';
@@ -241,11 +255,34 @@ async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
     core.info(contents);
 
     const config = yaml.load(contents) as ConfigurationFile;
+    config.fileName = file;
 
     return config;
 }
 
-function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
+async function getAZDConfigurationFile(): Promise<AZDConfiguration | undefined> {
+    const globber = await glob.create(ASD_CONFIG_FILE);
+    const files = await globber.glob();
+
+    const file = files.length > 0 ? files[0] : undefined;
+
+    if (!file) {
+        core.info(`No ${ASD_CONFIG_FILE} file found, skipping`);
+        core.warning(`Could not find azd configuration file at path: ${ASD_CONFIG_FILE}`);
+        return undefined;
+    }
+
+    core.info(`Found azd file: ${file}`);
+
+    const contents = await fs.readFile(file, 'utf8');
+    core.info(contents);
+
+    const config = yaml.load(contents) as AZDConfiguration;
+
+    return config;
+}
+
+function getEnvironmentSetup(config: Configuration): EnvironmentConfig {
     const context = github.context;
 
     const { eventName } = context;
@@ -266,6 +303,9 @@ function getEnvironmentConfig(config: Configuration): EnvironmentConfig {
     const setup: EnvironmentConfig = {} as EnvironmentConfig;
 
     if (isPr) {
+        // A | feature -> main | Test    |
+        // B | feature -> dev  | Test    |
+        // B | dev -> main     | Staging |
         setup.type =
             context.payload.pull_request!['base']['ref'] == config.mainBranch && config.devBranch
                 ? config.stagingEnvironmentType
@@ -377,47 +417,60 @@ function setOutputsAndVariables(
 ): void {
     core.info('Setting outputs:');
 
+    const group = {} as ResourceGroup;
+
+    if (environment) {
+        group.id = environment.resourceGroupId;
+
+        const resourceGroupKey = group.id.includes('/resourceGroups/') ? '/resourceGroups/' : '/resourcegroups/';
+
+        group.name = group.id.split(resourceGroupKey)[1].split('/')[0];
+        group.subscription = group.id.split('/subscriptions/')[1].split('/')[0];
+        group.url = `https://portal.azure.com/#@${config.tenant}/resource${group.id}`;
+    }
+
     core.info(`  name: ${config.environmentName}`);
     core.setOutput('name', config.environmentName);
 
     core.info(`  type: ${config.environmentType}`);
     core.setOutput('type', config.environmentType);
 
-    core.info(`  tenant: ${config.tenant}`);
-    core.setOutput('tenant', config.tenant);
+    core.info(`  devcenter: ${config.devcenter}`);
+    core.setOutput('devcenter', config.devcenter);
 
-    let groupId = '';
-    let group = '';
-    let subscription = '';
-    let portalUrl = '';
+    core.info(`  project: ${config.project}`);
+    core.setOutput('project', config.project);
 
-    if (environment) {
-        groupId = environment.resourceGroupId;
+    core.info(`  definition: ${config.definition}`);
+    core.setOutput('definition', config.definition);
 
-        const resourceGroupKey = groupId.includes('/resourceGroups/') ? '/resourceGroups/' : '/resourcegroups/';
+    core.info(`  parameters: ${config.parameters}`);
+    core.setOutput('parameters', config.parameters);
 
-        group = groupId.split(resourceGroupKey)[1].split('/')[0];
-        subscription = groupId.split('/subscriptions/')[1].split('/')[0];
-        portalUrl = `https://portal.azure.com/#@${config.tenant}/resource${groupId}`;
+    if (config.action !== SETUP) {
+        core.info(`  tenant: ${config.tenant}`);
+        core.setOutput('tenant', config.tenant);
 
-        core.info(`  subscription: ${subscription}`);
-        core.setOutput('subscription', subscription);
+        if (environment) {
+            core.info(`  subscription: ${group.subscription}`);
+            core.setOutput('subscription', group.subscription);
 
-        core.info(`  resource-group: ${group}`);
-        core.setOutput('resource-group', group);
+            core.info(`  resource-group: ${group.name}`);
+            core.setOutput('resource-group', group.name);
 
-        core.info(`  resource-group-id: ${groupId}`);
-        core.setOutput('resource-group-id', groupId);
+            core.info(`  resource-group-id: ${group.id}`);
+            core.setOutput('resource-group-id', group.id);
 
-        core.info(`  portal-url: ${portalUrl}`);
-        core.setOutput('portal-url', portalUrl);
+            core.info(`  portal-url: ${group.url}`);
+            core.setOutput('portal-url', group.url);
+        }
+
+        core.info(`  exists: ${exists}`);
+        core.setOutput('exists', exists);
+
+        core.info(`  created: ${created}`);
+        core.setOutput('created', created);
     }
-
-    core.info(`  exists: ${exists}`);
-    core.setOutput('exists', exists);
-
-    core.info(`  created: ${created}`);
-    core.setOutput('created', created);
 
     core.info('Setting environment variables:');
 
@@ -427,47 +480,63 @@ function setOutputsAndVariables(
     core.info(`  ADE_TYPE: ${config.environmentType}`);
     core.exportVariable('ADE_TYPE', config.environmentType);
 
-    core.info(`  ADE_TENANT: ${config.tenant}`);
-    core.exportVariable('ADE_TENANT', config.tenant);
+    core.info(`  ADE_DEVCENTER: ${config.devcenter}`);
+    core.exportVariable('ADE_DEVCENTER', config.devcenter);
 
-    if (environment) {
-        core.info(`  ADE_SUBSCRIPTION: ${subscription}`);
-        core.exportVariable('ADE_SUBSCRIPTION', subscription);
+    core.info(`  ADE_PROJECT: ${config.project}`);
+    core.exportVariable('ADE_PROJECT', config.project);
 
-        core.info(`  ADE_RESOURCE_GROUP: ${group}`);
-        core.exportVariable('ADE_RESOURCE_GROUP', group);
+    core.info(`  ADE_DEFINITION: ${config.definition}`);
+    core.exportVariable('ADE_DEFINITION', config.definition);
 
-        core.info(`  ADE_RESOURCE_GROUP_ID: ${groupId}`);
-        core.exportVariable('ADE_RESOURCE_GROUP_ID', groupId);
+    core.info(`  ADE_PARAMETERS: ${config.parameters}`);
+    core.exportVariable('ADE_PARAMETERS', config.parameters);
 
-        core.info(`  ADE_PORTAL_URL: ${portalUrl}`);
-        core.exportVariable('ADE_PORTAL_URL', portalUrl);
+    if (config.action !== SETUP) {
+        core.info(`  ADE_TENANT: ${config.tenant}`);
+        core.exportVariable('ADE_TENANT', config.tenant);
+
+        if (environment) {
+            core.info(`  ADE_SUBSCRIPTION: ${group.subscription}`);
+            core.exportVariable('ADE_SUBSCRIPTION', group.subscription);
+
+            core.info(`  ADE_RESOURCE_GROUP: ${group.name}`);
+            core.exportVariable('ADE_RESOURCE_GROUP', group.name);
+
+            core.info(`  ADE_RESOURCE_GROUP_ID: ${group.id}`);
+            core.exportVariable('ADE_RESOURCE_GROUP_ID', group.id);
+
+            core.info(`  ADE_PORTAL_URL: ${group.url}`);
+            core.exportVariable('ADE_PORTAL_URL', group.url);
+        }
+
+        core.info(`  ADE_EXISTS: ${exists}`);
+        core.exportVariable('ADE_EXISTS', exists.toString());
+
+        core.info(`  ADE_CREATED: ${created}`);
+        core.exportVariable('ADE_CREATED', created.toString());
     }
 
-    core.info(`  ADE_EXISTS: ${exists}`);
-    core.exportVariable('ADE_EXISTS', exists.toString());
-
-    core.info(`  ADE_CREATED: ${created}`);
-    core.exportVariable('ADE_CREATED', created.toString());
-
     // azd
-    // core.info(`  AZURE_ENV_NAME: ${config.environmentName}`);
-    // core.exportVariable('AZURE_ENV_NAME', config.environmentName);
+    if (config.azd) {
+        core.info(`  AZURE_ENV_NAME: ${config.environmentName}`);
+        core.exportVariable('AZURE_ENV_NAME', config.environmentName);
 
-    // core.info(`  AZURE_DEVCENTER_NAME: ${config.devcenter}`);
-    // core.exportVariable('AZURE_DEVCENTER_NAME', config.devcenter);
+        core.info(`  AZURE_DEVCENTER_NAME: ${config.devcenter}`);
+        core.exportVariable('AZURE_DEVCENTER_NAME', config.devcenter);
 
-    // core.info(`  AZURE_DEVCENTER_PROJECT: ${config.project}`);
-    // core.exportVariable('AZURE_DEVCENTER_PROJECT', config.project);
+        core.info(`  AZURE_DEVCENTER_PROJECT: ${config.project}`);
+        core.exportVariable('AZURE_DEVCENTER_PROJECT', config.project);
 
-    // core.info(`  AZURE_DEVCENTER_CATALOG: ${config.catalog}`);
-    // core.exportVariable('AZURE_DEVCENTER_CATALOG', config.catalog);
+        core.info(`  AZURE_DEVCENTER_CATALOG: ${config.catalog}`);
+        core.exportVariable('AZURE_DEVCENTER_CATALOG', config.catalog);
 
-    // core.info(`  AZURE_DEVCENTER_ENVIRONMENT_DEFINITION: ${config.definition}`);
-    // core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_DEFINITION', config.definition);
+        core.info(`  AZURE_DEVCENTER_ENVIRONMENT_DEFINITION: ${config.definition}`);
+        core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_DEFINITION', config.definition);
 
-    core.info(`  AZURE_DEVCENTER_ENVIRONMENT_TYPE: ${config.environmentType}`);
-    core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_TYPE', config.environmentType);
+        core.info(`  AZURE_DEVCENTER_ENVIRONMENT_TYPE: ${config.environmentType}`);
+        core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_TYPE', config.environmentType);
+    }
 
     // core.info(`  AZURE_DEVCENTER_ENVIRONMENT_USER: ${}`)
     // core.exportVariable('AZURE_DEVCENTER_ENVIRONMENT_USER', '');

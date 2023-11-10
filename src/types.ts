@@ -10,10 +10,12 @@ export interface Environment {
 }
 
 export interface ResourceGroup {
-    id: string;
-    location: string;
-    name: string;
-    tags: object;
+    id?: string;
+    name?: string;
+    subscription?: string;
+    location?: string;
+    tags?: object;
+    url?: string;
 }
 
 export interface Configuration {
@@ -38,9 +40,11 @@ export interface Configuration {
     environmentName: string;
     environmentType: string;
     summary: boolean;
+    azd: boolean;
 }
 
 export interface ConfigurationFile {
+    fileName?: string;
     tenant?: string;
     subscription?: string;
     devcenter?: string;
@@ -58,6 +62,37 @@ export interface ConfigurationFile {
     'test-environment-type'?: string;
     'dev-environment-type'?: string;
     summary?: boolean;
+    azd?: boolean;
+}
+
+export interface AZDConfiguration {
+    name?: string;
+    resourceGroup?: string;
+    metadata?: AZDMetadata;
+    infra?: any;
+    services?: any;
+    pipeline?: any;
+    hooks?: any;
+    requiredVersions?: any;
+    state?: any;
+    platform?: AZDPlatform;
+}
+
+export interface AZDMetadata {
+    template?: string;
+}
+
+export interface AZDPlatform {
+    type: string;
+    config?: AZDPlatformDevCenter;
+}
+
+export interface AZDPlatformDevCenter {
+    name: string;
+    project: string;
+    catalog: string;
+    environmentDefinition: string;
+    environmentType: string;
 }
 
 export interface EnvironmentConfig {

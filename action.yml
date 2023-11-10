@@ -62,6 +62,10 @@ inputs:
     description: 'If set to true, the action will output a summary of the environment.'
     required: false
     default: 'false'
+  azd:
+    description: 'If set to true, the action will set environment variables that azd can consume. It also enables the action to retrieve input values from azd azure.yaml'
+    required: false
+    default: 'false'
 outputs:
   tenant:
     description: 'The environment tenant (GUID).'
@@ -81,6 +85,16 @@ outputs:
     description: 'The environment name.'
   type:
     description: 'The environment type.'
+  devcenter:
+    description: 'The DevCenter name.'
+  project:
+    description: 'The Project name.'
+  catalog:
+    description: 'The name of the Catalog.'
+  definition:
+    description: 'The name of the Environment Definition.'
+  parameters:
+    description: 'A JSON string containing parameters for the environment.'
 runs:
   using: 'node16'
   main: 'dist/index.js'
