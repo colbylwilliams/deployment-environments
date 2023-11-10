@@ -255,7 +255,7 @@ async function getConfigurationFile(): Promise<ConfigurationFile | undefined> {
     core.info(contents);
 
     const config = yaml.load(contents) as ConfigurationFile;
-    config.fileName = file;
+    config.fileName = file.split('/').pop();
 
     return config;
 }

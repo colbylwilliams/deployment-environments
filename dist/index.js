@@ -251,7 +251,7 @@ function getConfigurationFile() {
         const contents = yield fs.readFile(file, 'utf8');
         core.info(contents);
         const config = yaml.load(contents);
-        config.fileName = file;
+        config.fileName = file.split('/').pop();
         return config;
     });
 }
